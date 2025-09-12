@@ -1,0 +1,9 @@
+/.vscode
+/debug
+/sandbox
+src/*
+!src/*.nim
+tests/*
+!tests/*.nim
+!tests/*.nims
+config.nims
