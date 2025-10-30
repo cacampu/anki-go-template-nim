@@ -7,6 +7,11 @@ type
         Black, White
     PointState* = enum
         Black, White, Empty
+    GameState* = enum
+        Ongoing,
+        Passed,
+        Finished,
+        Resigned
 
 type Board* = object
     size: int
@@ -14,6 +19,8 @@ type Board* = object
     kou_pt*: Option[Coord]
     b_stones: Bits
     w_stones: Bits
+    state*: GameState
+
 type BitBoard* = object
     size: int
     color: Color
@@ -67,6 +74,7 @@ proc `[]=`*(self: var Board, x: int, y: int, state: PointState) =
 proc initBoard*(size: int): Board =
     Board(size: size)
 
+
 proc turn_change*(self: var Board) =
     self.turn = self.turn.opp
 
@@ -90,7 +98,7 @@ proc `$`*(board: Board): string =
         &"({x}, {y})"
     else:
         "none"
-    result.add(&"turn_color: {board.turn}\nkou_point : {kou}\n")
+    result.add(&"turn_color: {board.turn}\nkou_point : {kou}\nstate     : {board.state}\n")
 
 
 proc `[]`*(self: BitBoard, coord: Coord): bool =
@@ -118,10 +126,6 @@ proc `[]=`*(self: var BitBoard, x: int, y: int, state: bool) =
 proc initBitBoard*(size: int, color: Color): BitBoard =
     BitBoard(size: size, color: color)
 
-#proc `==`*(a: Color, b: PointState): bool =
-#    a.ord == b.ord
-#proc `==`*(a: PointState, b: Color): bool =
-#    a.ord == b.ord
 
 proc remove*(board: var Board, bit_board: BitBoard) =
     assert(board.size == bit_board.size, "Attempting to remove stones from a different sized board")
@@ -137,3 +141,9 @@ converter toPointState*(self: Color): PointState =
 proc count*(self: BitBoard): int =
     self.bits.card
 
+
+proc `$`*(coord: Coord): string =
+    let (x, y) = coord
+    proc to_char(i: int): char =
+        ('a'.ord + i).chr
+    result = x.to_char & y.to_char
