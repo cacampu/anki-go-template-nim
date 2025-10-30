@@ -7,9 +7,9 @@ type
     MoveKind* = enum
         Put, Pass, Resign
     Move* = object
+        color*: Color
         case kind*: MoveKind
         of Put:
-            turn*: Color
             coord*: Coord
         of Pass:
             discard
@@ -37,6 +37,7 @@ proc put_stone(board: Board, coord: Coord, turn: Color): Result[Board, string] =
     var board = board
     board[coord] = turn
     board.turn = turn
+    board.state = Ongoing
 
     proc capture(coord: Coord, color: Color): bool =
         var vis = initBitBoard(board.size, color)
@@ -72,17 +73,35 @@ proc put_stone(board: Board, coord: Coord, turn: Color): Result[Board, string] =
     board.turn_change()
     ok(board)
 
+proc pass(board: Board): Result[Board, string] =
+    var board = board
+    board.turn_change()
+    case board.state
+    of Ongoing:
+        board.state = Passed
+    of Passed:
+        board.state = Finished
+    else:
+        assert(false)
+    ok(board)
+
+proc resign(board: Board): Result[Board, string] =
+    var board = board
+    board.turn_change()
+    board.state = Resigned
+    ok(board)
+
 
 
 proc apply_move*(board: Board, move: Move): Result[Board, string] =
-    var board = board
+    if board.state == Resigned or board.state == Finished:
+        return err("終局した盤面にmoveを適用しようとしました")
     case move.kind
-    of Pass:
-        board.turn_change()
-        ok(board)
-    of Resign:
-        ok(board)
     of Put:
-        put_stone(board, move.coord, move.turn)
+        board.put_stone(move.coord, move.color)
+    of Pass:
+        board.pass()
+    of Resign:
+        board.resign()
 
 

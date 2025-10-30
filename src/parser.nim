@@ -64,19 +64,27 @@ proc parse*(sgf: string): Tree =
       else:
         pos += 1
     node
-
-  result.root = parse_node()
-  result.current_node = result.root
+  let root = parse_node()
+  result = initTree(root)
 
 
 proc serialize*(tree: Tree): string =
   proc unparsed_props(node: Node): string =
+    proc escape_value(s: string): string =
+      for c in s:
+        case c
+        of ']':
+          result.add("\\]")
+        of '\\':
+          result.add("\\\\")
+        else:
+          result.add(c)
     result.add(';')
     for k, vs in node.props:
       result.add(k)
       for v in vs:
         result.add('[')
-        result.add(v)
+        result.add(v.escape_value())
         result.add(']')
   proc unparse(node: Node): string =
     if node == nil: return
