@@ -1,6 +1,8 @@
 /.vscode
 /debug
 /sandbox
+/dist
+/public
 src/*
 !src/*.nim
 tests/*
