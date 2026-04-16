@@ -24,10 +24,7 @@ let jsContent = readFile(tmpDir / jsFile)
 
 # 4. HTMLテンプレートの読み込みと置換
 let htmlTemplate = readFile(publicDir / templateHtml)
-let finalHtml = htmlTemplate.replace(
-  "<!-- Script -->",
-  jsContent
-)
+let finalHtml = htmlTemplate.replace("<!-- Script -->", jsContent)
 
 # 5. 結果の書き出し
 writeFile(distDir / outputHtml, finalHtml)

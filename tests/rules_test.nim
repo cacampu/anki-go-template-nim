@@ -3,43 +3,20 @@ import rules
 import results
 import sequtils
 
-
-let moves1 = [
-    (3, 1),
-    (2, 1),
-    (2, 2),
-    (1, 2),
-    (1, 1),
-    (2, 1)
-]
-let moves2 = [
-    (3, 1),
-    (2, 1),
-    (2, 2),
-    (1, 2),
-    (1, 3),
-    (1, 1)
-]
-let moves3 = [
-    (3, 3),
-    (4, 1),
-    (3, 1),
-    (3, 2),
-    (2, 2),
-    (2, 1),
-]
-
+let moves1 = [(3, 1), (2, 1), (2, 2), (1, 2), (1, 1), (2, 1)]
+let moves2 = [(3, 1), (2, 1), (2, 2), (1, 2), (1, 3), (1, 1)]
+let moves3 = [(3, 3), (4, 1), (3, 1), (3, 2), (2, 2), (2, 1)]
 
 proc test_putmove[I](moves: array[I, Coord]) =
-    var b = initBoard(9)
-    for m in moves:
-        let ret = b.apply_move(Move(kind: Put, coord: m, turn: b.turn))
-        if ret.isOk:
-            b = ret.get()
-        else:
-            echo "Error: ", ret.error, "  last move: ", m
+  var b = initBoard(9)
+  for m in moves:
+    let ret = b.apply_move(Move(kind: Put, coord: m, turn: b.turn))
+    if ret.isOk:
+      b = ret.get()
+    else:
+      echo "Error: ", ret.error, "  last move: ", m
 
-    echo b
+  echo b
 
 test_putmove(moves1)
 test_putmove(moves2)
@@ -51,18 +28,18 @@ let moves4 = [Pass].mapIt(Move(kind: it))
 let moves5 = [Pass, Pass, Pass].mapIt(Move(kind: it))
 let moves6 = [Resign, Pass].mapIt(Move(kind: it))
 proc test_move(moves: seq[Move]) =
-    var b = initBoard(9)
-    for move in moves:
-        let ret = b.apply_move(move)
-        if ret.isOk:
-            b = ret.get()
-        else:
-            echo "Error: ", ret.error
-    echo b
+  var b = initBoard(9)
+  for move in moves:
+    let ret = b.apply_move(move)
+    if ret.isOk:
+      b = ret.get()
+    else:
+      echo "Error: ", ret.error
+  echo b
+
 test_move(moves4)
 test_move(moves5)
 test_move(moves6)
-
 
 #proc test_move[I](moves: array[I, Coord]): Result[Board, string] =
 #    var b = initBoard(9)

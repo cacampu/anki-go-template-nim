@@ -3,23 +3,31 @@ import strutils
 type
   Coord* = tuple[x: int, y: int]
   Color* = enum
-    Black, White
+    Black
+    White
+
   PointState* = enum
-    Black, White, Empty
+    Black
+    White
+    Empty
+
   GameState* = enum
-    Ongoing,
-    Passed,
-    Finished,
+    Ongoing
+    Passed
+    Finished
     Resigned
 
 proc parseCoord*(s: string): Coord =
-  let x = s[0].toLowerAscii.ord - 'a'.ord
-  let y = s[1].toLowerAscii.ord - 'a'.ord
+  let x = s[0].toLowerAscii.ord - 'a'.ord + 1
+  let y = s[1].toLowerAscii.ord - 'a'.ord + 1
   (x, y)
 
 type
   MoveKind* = enum
-    Put, Pass, Resign
+    Put
+    Pass
+    Resign
+
   Move* = object
     color*: Color
     case kind*: MoveKind

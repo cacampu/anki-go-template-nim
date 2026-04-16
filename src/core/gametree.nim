@@ -1,4 +1,4 @@
-import propaties
+import properties
 import types
 import tables
 import sequtils
@@ -14,7 +14,8 @@ type Tree* = object
   depth: int
 
 type BranchKind* = enum
-  Answer, Analysis
+  Answer
+  Analysis
 
 type GameTree* = object
   inner: array[BranchKind, Tree]
@@ -24,6 +25,7 @@ proc add_child*(parent: Node, child: Node) =
   if parent != nil:
     child.parent = parent
     parent.children.add(child)
+
 proc remove*(node: Node): Node =
   node.parent.children.keepItIf(it != node)
   node.parent
@@ -31,16 +33,20 @@ proc remove*(node: Node): Node =
 #tree
 proc initTree*(root: Node = Node()): Tree =
   Tree(root: root, current_node: root, depth: 0)
+
 proc root*(tree: Tree): Node =
   tree.root
 
 proc can_prev(tree: Tree): bool =
   tree.current_node != tree.root
+
 proc can_next(tree: Tree, i: int): bool =
   tree.current_node.children.len > i
+
 proc go_prev(tree: var Tree) =
   tree.current_node = tree.current_node.parent
   tree.depth -= 1
+
 proc go_next(tree: var Tree, i: int) =
   tree.current_node = tree.current_node.children[i]
   tree.depth += 1
@@ -52,7 +58,8 @@ proc reset(tree: var Tree) =
 
 #gametree
 proc depth*(gtree: GameTree): int =
-  gtree.inner.mapIt(it.depth).foldl(a+b)
+  gtree.inner.mapIt(it.depth).foldl(a + b)
+
 proc ans_depth*(gtree: GameTree): int =
   gtree.inner[Answer].depth
 
@@ -61,26 +68,30 @@ proc current_node*(gtree: GameTree): Node =
     gtree.inner[Analysis].current_node
   else:
     gtree.inner[Answer].current_node
+
 proc root*(gtree: GameTree): Node =
   gtree.inner[Answer].root
 
 proc reset_analysis(gtree: var GameTree) =
   gtree.inner[Analysis].reset()
+
 proc add_ana_node*(gtree: var GameTree, node: Node) =
   gtree.inner[Analysis].current_node.children = @[node]
 
-
 proc can_prev*(gtree: GameTree, bk: BranchKind): bool =
   gtree.inner[bk].can_prev()
+
 proc can_next*(gtree: GameTree, bk: BranchKind, i: int = 0): bool =
   gtree.inner[bk].can_next(i)
+
 proc has_ans_branch*(gtree: GameTree): bool =
-  gtree.inner[Analysis].root.children.len > 1
+  gtree.inner[Answer].current_node.children.len > 1
 
 proc go_prev*(gtree: var GameTree, bk: BranchKind) =
   if bk == Answer:
     gtree.reset_analysis()
   gtree.inner[bk].go_prev()
+
 proc go_next*(gtree: var GameTree, bk: BranchKind, i: int = 0) =
   if bk == Answer:
     gtree.reset_analysis()
@@ -99,16 +110,14 @@ proc merge_to_ans*(gtree: var GameTree) =
   ana.reset()
 
 proc initGameTree*(ans_tree: Tree): GameTree =
-  GameTree(
-    inner: [ans_tree, initTree()]
-  )
+  GameTree(inner: [ans_tree, initTree()])
 
-
-
-proc min_max (a: Range, b: Range): Range =
+proc min_max(a: Range, b: Range): Range =
   [min(a[0], b[0]), max(a[1], b[1])]
-proc min_max (a: XYRange, b: XYRange): XYRange =
+
+proc min_max(a: XYRange, b: XYRange): XYRange =
   [min_max(a[0], b[0]), min_max(a[1], b[1])]
+
 proc to_xy_range(coord: Coord): XYRange =
   [[coord[0], coord[0]], [coord[1], coord[1]]]
 
@@ -125,5 +134,5 @@ proc xy_range*(gtree: GameTree): XYRange =
           result = result.min_max(coord_range)
     for child in node.children:
       update_range(child)
-  update_range(tree.root)
 
+  update_range(tree.root)

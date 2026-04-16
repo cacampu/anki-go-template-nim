@@ -1,4 +1,4 @@
-import ../core/[board, gametree, propaties]
+import ../core/[board, gametree, properties]
 import ../app/[state, handler]
 import results
 import dom

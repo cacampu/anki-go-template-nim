@@ -1,4 +1,4 @@
-import ../core/[types, board, propaties, gametree]
+import ../core/[types, board, properties, gametree]
 import ../logic/[rules, parser]
 import state
 import results

@@ -1,4 +1,4 @@
-import ../core/[propaties, gametree]
+import ../core/[properties, gametree]
 import tables
 import strutils
 
@@ -10,11 +10,12 @@ proc parse*(sgf: string): Tree =
       case c
       of '[':
         break
-      of 'A'..'Z':
+      of 'A' .. 'Z':
         result.add(c)
       else:
         discard
       pos += 1
+
   proc parse_value(): seq[string] =
     proc collect_str(): string =
       while pos < sgf.len():
@@ -30,6 +31,7 @@ proc parse*(sgf: string): Tree =
         else:
           result.add(c)
         pos += 1
+
     while pos < sgf.len():
       let c = sgf[pos]
       case c
@@ -64,9 +66,9 @@ proc parse*(sgf: string): Tree =
       else:
         pos += 1
     node
+
   let root = parse_node()
   result = initTree(root)
-
 
 proc serialize*(tree: Tree): string =
   proc unparsed_props(node: Node): string =
@@ -79,6 +81,7 @@ proc serialize*(tree: Tree): string =
           result.add("\\\\")
         else:
           result.add(c)
+
     result.add(';')
     for k, vs in node.props:
       result.add(k)
@@ -86,8 +89,10 @@ proc serialize*(tree: Tree): string =
         result.add('[')
         result.add(v.escape_value())
         result.add(']')
+
   proc unparse(node: Node): string =
-    if node == nil: return
+    if node == nil:
+      return
     result.add(node.unparsed_props)
     if node.children.len == 1:
       result.add(node.children[0].unparse())
@@ -100,13 +105,3 @@ proc serialize*(tree: Tree): string =
   result.add('(')
   result.add(tree.root.unparse())
   result.add(')')
-
-
-
-
-
-
-
-
-
-
