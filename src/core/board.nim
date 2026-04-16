@@ -1,17 +1,8 @@
+import types
 import std/options
 import std/strformat
 type
     Bits = set[1..19*19]
-    Coord* = tuple[x: int, y: int]
-    Color* = enum
-        Black, White
-    PointState* = enum
-        Black, White, Empty
-    GameState* = enum
-        Ongoing,
-        Passed,
-        Finished,
-        Resigned
 
 type Board* = object
     size: int

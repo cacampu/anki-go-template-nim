@@ -1,6 +1,6 @@
 import unittest
-import nodetree
-import parser
+import core/gametree
+import logic/parser
 import tables
 
 let sgf = """(;GM[1]FF[3]AB[rd][rc][qc][pc][oc][nc][pb][oa]AW[mb][nb][ob][mc][nd][od][pd][qd][re][qf]PL[W]C[White to play and kill.]AP[MultiGo:3.9.3]SZ[19]

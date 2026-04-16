@@ -1,20 +1,8 @@
-import board
+import ../core/[types, board]
 import results
 import options
 import sequtils
 
-type
-    MoveKind* = enum
-        Put, Pass, Resign
-    Move* = object
-        color*: Color
-        case kind*: MoveKind
-        of Put:
-            coord*: Coord
-        of Pass:
-            discard
-        of Resign:
-            discard
 
 proc `+`(a: Coord, b: Coord): Coord =
     (a.x+b.x, a.y+b.y)

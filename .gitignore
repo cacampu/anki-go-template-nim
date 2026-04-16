@@ -2,10 +2,11 @@
 /debug
 /sandbox
 /dist
-/public
-src/*
-!src/*.nim
+/tmp
+
 tests/*
 !tests/*.nim
 !tests/*.nims
 config.nims
+scripts/*
+!scripts/*.nim

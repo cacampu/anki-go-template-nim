@@ -1,7 +1,8 @@
+import propaties
+import types
 import tables
 import sequtils
 
-type Properties* = OrderedTable[string, seq[string]]
 type Node* = ref object
   parent*: Node
   children*: seq[Node]
@@ -60,6 +61,8 @@ proc current_node*(gtree: GameTree): Node =
     gtree.inner[Analysis].current_node
   else:
     gtree.inner[Answer].current_node
+proc root*(gtree: GameTree): Node =
+  gtree.inner[Answer].root
 
 proc reset_analysis(gtree: var GameTree) =
   gtree.inner[Analysis].reset()
@@ -100,10 +103,27 @@ proc initGameTree*(ans_tree: Tree): GameTree =
     inner: [ans_tree, initTree()]
   )
 
-proc `+`*(a: Properties, b: Properties): Properties =
-  result = a
-  for k, vs in b:
-    if k in result:
-      result[k].add(vs)
-    else:
-      result[k] = vs
+
+
+proc min_max (a: Range, b: Range): Range =
+  [min(a[0], b[0]), max(a[1], b[1])]
+proc min_max (a: XYRange, b: XYRange): XYRange =
+  [min_max(a[0], b[0]), min_max(a[1], b[1])]
+proc to_xy_range(coord: Coord): XYRange =
+  [[coord[0], coord[0]], [coord[1], coord[1]]]
+
+proc xy_range*(gtree: GameTree): XYRange =
+  let tree = gtree.inner[Answer]
+  result = [[999, -1], [999, -1]]
+  proc update_range(node: Node) =
+    let keys = ["B", "W", "AB", "AW"]
+    for k in keys:
+      if k in node.props:
+        for v in node.props[k]:
+          let coord = parseCoord(v)
+          let coord_range = to_xy_range(coord)
+          result = result.min_max(coord_range)
+    for child in node.children:
+      update_range(child)
+  update_range(tree.root)
+

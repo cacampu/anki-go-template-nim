@@ -1,4 +1,4 @@
-import nodetree
+import ../core/[propaties, gametree]
 import tables
 import strutils
 

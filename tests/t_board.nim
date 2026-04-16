@@ -1,5 +1,5 @@
 import unittest
-import board
+import core/[types,board]
 import options
 
 var x = initBoard(9)
