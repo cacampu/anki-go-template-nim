@@ -22,6 +22,12 @@ proc parseCoord*(s: string): Coord =
   let y = s[1].toLowerAscii.ord - 'a'.ord + 1
   (x, y)
 
+proc `$`*(coord: Coord): string =
+  let (x, y) = coord
+  proc to_char(i: int): char =
+    ('a'.ord + i - 1).chr
+  result = x.to_char & y.to_char
+
 type
   MoveKind* = enum
     Put

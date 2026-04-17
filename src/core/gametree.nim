@@ -76,6 +76,7 @@ proc reset_analysis(gtree: var GameTree) =
   gtree.inner[Analysis].reset()
 
 proc add_ana_node*(gtree: var GameTree, node: Node) =
+  node.parent = gtree.inner[Analysis].current_node
   gtree.inner[Analysis].current_node.children = @[node]
 
 proc can_prev*(gtree: GameTree, bk: BranchKind): bool =
@@ -86,6 +87,12 @@ proc can_next*(gtree: GameTree, bk: BranchKind, i: int = 0): bool =
 
 proc has_ans_branch*(gtree: GameTree): bool =
   gtree.inner[Answer].current_node.children.len > 1
+
+proc in_analysis*(gtree: GameTree): bool =
+  gtree.inner[Analysis].depth > 0
+
+proc ans_current_node*(gtree: GameTree): Node =
+  gtree.inner[Answer].current_node
 
 proc go_prev*(gtree: var GameTree, bk: BranchKind) =
   if bk == Answer:
@@ -121,18 +128,17 @@ proc min_max(a: XYRange, b: XYRange): XYRange =
 proc to_xy_range(coord: Coord): XYRange =
   [[coord[0], coord[0]], [coord[1], coord[1]]]
 
+proc update_range(acc: XYRange, node: Node): XYRange =
+  result = acc
+  let keys = ["B", "W", "AB", "AW"]
+  for k in keys:
+    if k in node.props:
+      for v in node.props[k]:
+        let coord = parseCoord(v)
+        result = result.min_max(to_xy_range(coord))
+  for child in node.children:
+    result = update_range(result, child)
+
 proc xy_range*(gtree: GameTree): XYRange =
   let tree = gtree.inner[Answer]
-  result = [[999, -1], [999, -1]]
-  proc update_range(node: Node) =
-    let keys = ["B", "W", "AB", "AW"]
-    for k in keys:
-      if k in node.props:
-        for v in node.props[k]:
-          let coord = parseCoord(v)
-          let coord_range = to_xy_range(coord)
-          result = result.min_max(coord_range)
-    for child in node.children:
-      update_range(child)
-
-  update_range(tree.root)
+  update_range([[999, -1], [999, -1]], tree.root)

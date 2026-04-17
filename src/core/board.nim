@@ -139,9 +139,3 @@ converter toPointState*(self: Color): PointState =
 proc count*(self: BitBoard): int =
   self.bits.card
 
-proc `$`*(coord: Coord): string =
-  let (x, y) = coord
-  proc to_char(i: int): char =
-    ('a'.ord + i - 1).chr
-
-  result = x.to_char & y.to_char
