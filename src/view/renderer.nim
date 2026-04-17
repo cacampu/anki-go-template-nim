@@ -53,6 +53,26 @@ proc hNested*(parent: Element, classes: varargs[string]): Element =
   for i in 1 ..< classes.len:
     discard result.h("div", classes[i])
 
+proc hsvg*(
+    parent: Element,
+    tag: string,
+    class_name: string = "",
+    attrs: openArray[(string, string)] = [],
+    styles: openArray[(string, string)] = [],
+): Element =
+  ## SVG 名前空間で要素を生成して parent に追加する。
+  let el = document.createElementNS(
+    cstring("http://www.w3.org/2000/svg"), cstring(tag))
+  if class_name.len > 0:
+    el.setAttribute(cstring("class"), cstring(class_name))
+  for (key, val) in attrs:
+    el.setAttribute(cstring(key), cstring(val))
+  for (prop, val) in styles:
+    el.style.setProperty(cstring(prop), cstring(val))
+  if parent != nil:
+    parent.appendChild(el)
+  el
+
 proc clear*(el: Element) =
   ## 子要素をすべて削除する。
   while el.firstChild != nil:
@@ -61,6 +81,34 @@ proc clear*(el: Element) =
 proc set_disabled(el: Element, v: bool) =
   if v: el.setAttribute("disabled", "")
   else: el.removeAttribute("disabled")
+
+## ====== SVG スプライト ======
+
+proc put_svg_defs(parent: Element) =
+  ## マーカー用 SVG スプライト定義を parent の非表示 div に注入する。一度だけ呼び出す。
+  let wrap = parent.h("div", styles = [("display", "none")])
+  wrap.innerHTML = cstring("""<svg xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="m-circle" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="30"
+    fill="var(--fill-color,white)" stroke="var(--stroke-color,black)" stroke-width="9"/>
+</symbol>
+<symbol id="m-square" viewBox="0 0 100 100">
+  <rect x="22.5" y="22.5" width="55" height="55" rx="4"
+    fill="var(--fill-color,white)" stroke="var(--stroke-color,black)" stroke-width="9"/>
+</symbol>
+<symbol id="m-triangle" viewBox="0 0 100 100">
+  <polygon points="50,17 18,72 82,72"
+    fill="var(--fill-color,white)" stroke="var(--stroke-color,black)"
+    stroke-width="9" stroke-linejoin="round"/>
+</symbol>
+<symbol id="m-cross" viewBox="0 0 100 100">
+  <rect x="25" y="25" width="50" height="50" fill="var(--fill-color,white)"/>
+  <line x1="24" y1="24" x2="76" y2="76"
+    stroke="var(--stroke-color,black)" stroke-width="9" stroke-linecap="round"/>
+  <line x1="24" y1="76" x2="76" y2="24"
+    stroke="var(--stroke-color,black)" stroke-width="9" stroke-linecap="round"/>
+</symbol>
+</defs></svg>""")
 
 ## ====== 盤面 DOM の生成 ======
 
@@ -116,14 +164,22 @@ proc update_stones(grid: Element, board: Board) =
 proc get_marker(grid: Element, coord: Coord): Element =
   grid.querySelector(cstring(coord_sel(coord)))
 
+proc put_marker_svg(grid: Element, symbol_id: string): Element =
+  ## SVG スプライト参照のグリッドセル (<svg><use>) を生成して grid に追加する。
+  ## data-x/y・grid-column/row は呼び出し元で設定する。
+  result = grid.hsvg("svg", "marker",
+    attrs = [("viewBox", "0 0 100 100"),
+             ("width", $cell_size), ("height", $cell_size)])
+  discard result.hsvg("use", attrs = [("href", "#" & symbol_id)])
+
 proc put_marker(grid: Element, key: string, coord: Coord, text: string = ""): Element =
   if grid.get_marker(coord) != nil: return
   case key
   of "LB":          result = grid.h("div", "label", text = text)
-  of "MA":          result = grid.h("div", "cross")
-  of "TR":          result = grid.hNested("triangle", "triangle-inner")
-  of "CR":          result = grid.h("div", "circle")
-  of "SQ":          result = grid.h("div", "square")
+  of "MA":          result = grid.put_marker_svg("m-cross")
+  of "TR":          result = grid.put_marker_svg("m-triangle")
+  of "CR":          result = grid.put_marker_svg("m-circle")
+  of "SQ":          result = grid.put_marker_svg("m-square")
   of "ansPtr":      result = grid.hNested("pointer-wrapper", "pointer ans")
   of "branchPtr":   result = grid.hNested("pointer-wrapper", "pointer branch")
   of "lastMovePtr": result = grid.h("div", "pointer last-move")
@@ -133,14 +189,19 @@ proc put_marker(grid: Element, key: string, coord: Coord, text: string = ""): El
   result.style.setProperty("grid-column", cstring($coord.x))
   result.style.setProperty("grid-row",    cstring($coord.y))
 
-proc update_markers(grid: Element, node: GameNode) =
+proc update_markers(grid: Element, node: GameNode, board: Board) =
   for key in ["LB", "MA", "TR", "CR", "SQ"]:
     if key notin node.props: continue
     for v in node.props[key]:
       let parts = v.split(":")
       let coord = parseCoord(parts[0])
       let text  = if parts.len > 1: parts[1] else: ""
-      discard grid.put_marker(key, coord, text)
+      let el = grid.put_marker(key, coord, text)
+      if el == nil: continue
+      case board[coord]
+      of Black: el.classList.add(cstring("onB"))
+      of White: el.classList.add(cstring("onW"))
+      of Empty: discard
 
 proc show_last_move(grid: Element, node: GameNode) =
   ## 直前の手にポインターを表示する。石の色と逆色でポインターを着色する。
@@ -197,7 +258,7 @@ proc render(board: Element, state: AppState) =
   let marker_grid = board.querySelector(".marker-grid")
   update_stones(stone_grid, state.board)
   marker_grid.clear()
-  update_markers(marker_grid, state.tree.current_node())
+  update_markers(marker_grid, state.tree.current_node(), state.board)
   show_last_move(marker_grid, state.tree.current_node())
 
 ## ====== スコープ (表示領域) ======
@@ -234,6 +295,7 @@ proc init*(base: Element) =
 
   # 盤面 DOM (board-side 配下)
   let board_base = board_side.h("div", "board-base")
+  put_svg_defs(board_base)
   let board      = block:
     let c = board_base.h("div", "board-container")
     c.draw_lines(state.board.size)

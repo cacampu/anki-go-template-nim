@@ -245,40 +245,18 @@ h2 {
     background-color: none;
 }
 
-.triangle {
-    --b: 4px;
-    width: calc(var(--cell-size) * cos(30deg));
-    transform: translate(calc((var(--cell-size) - 100%) / 2), 1.5px);
-    aspect-ratio: 1 / cos(30deg);
-    clip-path: polygon(50% 0, 100% 100%, 0 100%, 50% 0);
-    background-color: #000000;
+.marker {
+    overflow: visible;
 }
 
-.triangle.inner {
-    transform: none;
-    clip-path: polygon(
-        50% var(--b),
-        calc(var(--b) * cos(30deg)) calc(100% - var(--b) / 2),
-        calc(100% - var(--b) * cos(30deg)) calc(100% - var(--b) / 2),
-        50% var(--b)
-    );
-    background-color: #ffffff;
+.marker.onB {
+    --stroke-color: #ffffff;
+    --fill-color: transparent;
 }
 
-.square {
-    --b: 2px;
-    --m: 5px;
-    width: calc(var(--cell-size) - var(--m) * 2);
-    aspect-ratio: 1;
-    background-color: #ffffff;
-    border: var(--b) solid #000000;
-    box-sizing: border-box;
-    transform: translate(var(--m), var(--m));
-}
-
-.square.onB {
-    background-color: #000000;
-    border-color: #ffffff;
+.marker.onW {
+    --stroke-color: #000000;
+    --fill-color: transparent;
 }
 
 .pointer-wrapper {
