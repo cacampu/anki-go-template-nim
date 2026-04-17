@@ -79,8 +79,8 @@ proc clear*(el: Element) =
     el.removeChild(el.firstChild)
 
 proc set_disabled(el: Element, v: bool) =
-  if v: el.setAttribute("disabled", "")
-  else: el.removeAttribute("disabled")
+  if v: el.classList.add(cstring("disabled"))
+  else: el.classList.remove(cstring("disabled"))
 
 ## ====== SVG スプライト ======
 
@@ -223,7 +223,7 @@ proc make_branch_button(
     on_click: proc(idx: int), idx: int,
 ) =
   ## 非主分岐の "+" ボタンを生成し、対応するポインターとホバー連動させる
-  let btn = container.h("button", "gb ans branch", text = "+")
+  let btn = container.h("div", "gb ans branch", text = "+")
   btn.addEventListener("mouseover", proc(e: Event) =
     pointer.classList.add(cstring("hover-state")))
   btn.addEventListener("mouseout", proc(e: Event) =
@@ -312,15 +312,15 @@ proc init*(base: Element) =
 
   # UI DOM (board-side 配下)
   let ui_base  = board_side.h("div", "ui-base")
-  let ana_cont = ui_base.h("div", "button-container")
-  let ans_cont = ui_base.h("div", "button-container")
+  let ana_cont = ui_base.h("div", "gb-container")
+  let ans_cont = ui_base.h("div", "gb-container")
 
   var ana_btns: array[6, Element]
   var ans_btns: array[8, Element]
   for i, lbl in ["|<", "<<", "<", ">", ">>", ">|"]:
-    ana_btns[i] = ana_cont.h("button", "gb ana", text = lbl)
+    ana_btns[i] = ana_cont.h("div", "gb ana", text = lbl)
   for i, lbl in ["|<", "<<", "<", ">", ">>", ">|", "+<", ">+"]:
-    ans_btns[i] = ans_cont.h("button", "gb ans", text = lbl)
+    ans_btns[i] = ans_cont.h("div", "gb ans", text = lbl)
   let branches_cont = ans_cont.h("div", "branches-container")
 
   # 情報パネル (card-inner 右側、常に表示)
@@ -351,7 +351,7 @@ proc init*(base: Element) =
   var re_render: proc()
 
   # 分岐ポインタ表示トグル (ans-settings 内)
-  let ptr_btn = ans_settings.h("button", "gb ans ptr-toggle", text = "分岐表示")
+  let ptr_btn = ans_settings.h("div", "gb ans ptr-toggle", text = "分岐表示")
   ptr_btn.addEventListener("click", proc(e: Event) =
     view.show_ans_ptr = not view.show_ans_ptr
     ptr_btn.className = cstring(
@@ -403,7 +403,7 @@ proc init*(base: Element) =
     let me = cast[MouseEvent](e)
     let x  = int(me.offsetX) div cell_size + 1
     let y  = int(me.offsetY) div cell_size + 1
-    if view.show_ans_ptr:
+    if view.show_ans:
       let sel = ".pointer-wrapper[data-x='" & $x & "'][data-y='" & $y & "']"
       let el = pointer_grid.querySelector(cstring(sel))
       if el != nil:
@@ -455,7 +455,11 @@ proc init*(base: Element) =
 
   # showAns() フック登録
   g_on_show_ans = proc() =
+    state = initAppState(sgf)
     view.show_ans = true
+    view.show_ans_ptr = true
+    ptr_btn.setAttribute(cstring("class"), cstring("gb ans ptr-toggle active"))
+    pointer_grid.style.removeProperty("display")
     update_visibility()
     re_render()
 

@@ -1,4 +1,4 @@
-.go-card {
+#go-card {
     font-family: sans-serif;
     padding: 20px;
     border: 2px solid #535353;
@@ -166,7 +166,9 @@ h2 {
 }
 
 .gb {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 50px;
     margin: 2px 4px;
     font-size: 15px;
@@ -204,14 +206,16 @@ h2 {
     transform: translateY(0);
 }
 
-.gb.ana:disabled {
+.gb.ana.disabled {
     background-color: #cccccc;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
-.gb.ans:disabled {
+.gb.ans.disabled {
     color: #cccccc;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
 .gb.active {
