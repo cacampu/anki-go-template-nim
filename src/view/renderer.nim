@@ -12,6 +12,7 @@ const cell_size = 29  ## CSS の --cell-size と合わせる (px)
 
 type ViewState* = object
   show_ans*: bool
+  show_ans_ptr*: bool
 
 ## ====== showAns グローバル関数 ======
 
@@ -191,20 +192,13 @@ proc show_branches(
 
 ## ====== 描画 ======
 
-proc render(
-    board: Element, state: AppState,
-    on_branch_click: proc(idx: int),
-    branches_cont: Element,
-) =
+proc render(board: Element, state: AppState) =
   let stone_grid  = board.querySelector(".stone-grid")
   let marker_grid = board.querySelector(".marker-grid")
   update_stones(stone_grid, state.board)
   marker_grid.clear()
-  branches_cont.clear()
   update_markers(marker_grid, state.tree.current_node())
   show_last_move(marker_grid, state.tree.current_node())
-  if not state.tree.in_analysis():
-    show_branches(marker_grid, state.tree.ans_current_node(), on_branch_click, branches_cont)
 
 ## ====== スコープ (表示領域) ======
 
@@ -245,12 +239,14 @@ proc init*(base: Element) =
     c.draw_lines(state.board.size)
     discard c.h("div", "grid stone-grid")
     discard c.h("div", "grid marker-grid")
+    discard c.h("div", "grid pointer-grid")
     discard c.h("div", "catcher")
     c
   change_scope(board_side, board, state.tree.xy_range())
 
-  let catcher     = board.querySelector(".catcher")
-  let marker_grid = board.querySelector(".marker-grid")
+  let catcher      = board.querySelector(".catcher")
+  let marker_grid  = board.querySelector(".marker-grid")
+  let pointer_grid = board.querySelector(".pointer-grid")
 
   # UI DOM (board-side 配下)
   let ui_base  = board_side.h("div", "ui-base")
@@ -280,7 +276,7 @@ proc init*(base: Element) =
   # 解答設定パネル (showAns まで非表示)
   let ans_settings = info_side.h("div", "ans-settings")
 
-  # 表示/非表示の切り替え: ans_cont と ans_settings のみ toggle
+  # 表示/非表示の切り替え: ans_cont / branches_cont / ans_settings を showAns で toggle
   proc update_visibility() =
     if view.show_ans:
       ans_cont.style.removeProperty("display")
@@ -291,6 +287,18 @@ proc init*(base: Element) =
 
   # re_render と on_branch_click は互いに参照するため var で前置宣言する
   var re_render: proc()
+
+  # 分岐ポインタ表示トグル (ans-settings 内)
+  let ptr_btn = ans_settings.h("button", "button ans ptr-toggle", text = "分岐表示")
+  ptr_btn.addEventListener("click", proc(e: Event) =
+    view.show_ans_ptr = not view.show_ans_ptr
+    ptr_btn.className = cstring(
+      if view.show_ans_ptr: "button ans ptr-toggle active"
+      else: "button ans ptr-toggle")
+    if view.show_ans_ptr:
+      pointer_grid.style.removeProperty("display")
+    else:
+      pointer_grid.style.setProperty("display", "none"))
 
   proc on_branch_click(idx: int) =
     if state.move_branch(Answer, Next, One, idx).isOk:
@@ -319,7 +327,11 @@ proc init*(base: Element) =
         cstring("")
 
   re_render = proc() =
-    render(board, state, on_branch_click, branches_cont)
+    render(board, state)
+    pointer_grid.clear()
+    branches_cont.clear()
+    if not state.tree.in_analysis():
+      show_branches(pointer_grid, state.tree.ans_current_node(), on_branch_click, branches_cont)
     update_buttons()
     update_turn()
     update_comment()
@@ -329,11 +341,12 @@ proc init*(base: Element) =
     let me = cast[MouseEvent](e)
     let x  = int(me.offsetX) div cell_size + 1
     let y  = int(me.offsetY) div cell_size + 1
-    let sel = ".pointer-wrapper[data-x='" & $x & "'][data-y='" & $y & "']"
-    let el = marker_grid.querySelector(cstring(sel))
-    if el != nil:
-      on_branch_click(parseInt($el.getAttribute("data-branch-idx")))
-      return
+    if view.show_ans_ptr:
+      let sel = ".pointer-wrapper[data-x='" & $x & "'][data-y='" & $y & "']"
+      let el = pointer_grid.querySelector(cstring(sel))
+      if el != nil:
+        on_branch_click(parseInt($el.getAttribute("data-branch-idx")))
+        return
     let move = Move(color: state.board.turn, kind: Put, coord: (x, y))
     if state.apply_move(move).isOk:
       re_render())
@@ -372,10 +385,10 @@ proc init*(base: Element) =
 
   # ans[3] (>) のホバーで ansPtr をハイライト
   ans_btns[3].addEventListener("mouseover", proc(e: Event) =
-    let el = marker_grid.querySelector(cstring(".pointer-wrapper"))
+    let el = pointer_grid.querySelector(cstring(".pointer-wrapper"))
     if el != nil: el.classList.add(cstring("hover-state")))
   ans_btns[3].addEventListener("mouseout", proc(e: Event) =
-    let el = marker_grid.querySelector(cstring(".pointer-wrapper"))
+    let el = pointer_grid.querySelector(cstring(".pointer-wrapper"))
     if el != nil: el.classList.remove(cstring("hover-state")))
 
   # showAns() フック登録
@@ -384,5 +397,6 @@ proc init*(base: Element) =
     update_visibility()
     re_render()
 
+  pointer_grid.style.setProperty("display", "none")
   update_visibility()
   re_render()
