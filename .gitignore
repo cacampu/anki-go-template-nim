@@ -2,7 +2,11 @@
 /debug
 /sandbox
 /dist
+/dist-dev
 /tmp
+nimcache/
+/sgf
+/docs
 
 tests/*
 !tests/*.nim
