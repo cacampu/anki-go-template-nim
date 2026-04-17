@@ -73,6 +73,9 @@ proc hsvg*(
     parent.appendChild(el)
   el
 
+proc bbox_width(el: Element):  float {.importjs: "#.getBBox().width".}
+proc bbox_height(el: Element): float {.importjs: "#.getBBox().height".}
+
 proc clear*(el: Element) =
   ## 子要素をすべて削除する。
   while el.firstChild != nil:
@@ -164,6 +167,39 @@ proc update_stones(grid: Element, board: Board) =
 proc get_marker(grid: Element, coord: Coord): Element =
   grid.querySelector(cstring(coord_sel(coord)))
 
+proc put_label_svg(grid: Element, text: string): Element =
+  ## LB マーカー: テキストを getBBox() で計測してフォントサイズを動的調整する。
+  const init_font_size = 60.0
+  const safe_area      = 80.0   # viewBox 100x100 内の安全領域
+  result = grid.hsvg("svg", "marker",
+    attrs = [("viewBox", "0 0 100 100"),
+             ("width",   $cell_size),
+             ("height",  $cell_size)])
+  # 背景矩形 (グリッド線を隠す / 石の上では透明)
+  discard result.hsvg("rect",
+    attrs = [("x", "0"), ("y", "0"), ("width", "100"), ("height", "100"),
+             ("fill", "var(--fill-color, white)")])
+  # テキスト要素 (まず不可視で追加して getBBox 計測後に表示)
+  let txt = result.hsvg("text",
+    attrs = [("x",                "50"),
+             ("y",                "50"),
+             ("text-anchor",      "middle"),
+             ("dominant-baseline","middle"),
+             ("font-size",        $init_font_size),
+             ("font-family",      "sans-serif"),
+             ("font-weight",      "bold"),
+             ("pointer-events",   "none")])
+  txt.style.setProperty("opacity", "0")
+  txt.textContent = cstring(text)
+  # getBBox でテキスト幅に応じてフォントサイズをスケール
+  let w = bbox_width(txt)
+  let h = bbox_height(txt)
+  if w > 0 and h > 0:
+    let scale = min(safe_area / w, safe_area / h)
+    if scale < 1.0:
+      txt.setAttribute("font-size", cstring($(init_font_size * scale)))
+  txt.style.removeProperty("opacity")
+
 proc put_marker_svg(grid: Element, symbol_id: string): Element =
   ## SVG スプライト参照のグリッドセル (<svg><use>) を生成して grid に追加する。
   ## data-x/y・grid-column/row は呼び出し元で設定する。
@@ -175,7 +211,7 @@ proc put_marker_svg(grid: Element, symbol_id: string): Element =
 proc put_marker(grid: Element, key: string, coord: Coord, text: string = ""): Element =
   if grid.get_marker(coord) != nil: return
   case key
-  of "LB":          result = grid.h("div", "label", text = text)
+  of "LB":          result = grid.put_label_svg(text)
   of "MA":          result = grid.put_marker_svg("m-cross")
   of "TR":          result = grid.put_marker_svg("m-triangle")
   of "CR":          result = grid.put_marker_svg("m-circle")

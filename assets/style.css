@@ -228,26 +228,6 @@ h2 {
     padding: 0 10px;
 }
 
-.label {
-    width: var(--cell-size);
-    aspect-ratio: 1;
-    align-items: center;
-    overflow: hidden;
-}
-
-.label-text {
-    color: #000000;
-    background-color: #ffffff;
-}
-
-.label-text.onB {
-    color: #ffffff;
-    background-color: none;
-}
-
-.label-text.onW {
-    background-color: none;
-}
 
 .marker {
     overflow: visible;
@@ -261,6 +241,14 @@ h2 {
 .marker.onW {
     --stroke-color: #000000;
     --fill-color: transparent;
+}
+
+.marker text {
+    fill: #000000;
+}
+
+.marker.onB text {
+    fill: #ffffff;
 }
 
 .pointer-wrapper {
@@ -312,14 +300,3 @@ h2 {
     background-color: #ffffff;
 }
 
-.label {
-    width: var(--cell-size);
-}
-
-.label.onW {
-    color: #000000;
-}
-
-.label.onB {
-    color: #ffffff;
-}
