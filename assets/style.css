@@ -152,7 +152,7 @@ h2 {
     background-color: #ffffff;
 }
 
-.button-container {
+.gb-container {
     display: grid;
     grid-template-columns: repeat(6, 50px);
     gap: 4px;
@@ -165,7 +165,7 @@ h2 {
     gap: 4px;
 }
 
-.button {
+.gb {
     display: inline-block;
     width: 50px;
     margin: 2px 4px;
@@ -178,48 +178,48 @@ h2 {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.button.ana {
+.gb.ana {
     height: 19px;
     color: #ffffff;
     background-color: #000000;
 }
 
-.button.ans {
+.gb.ans {
     height: 22px;
     color: #000000;
     background-color: #ffffff;
 }
 
-.button.ans.branch {
+.gb.ans.branch {
     width: 40px;
     height: 19px;
     transform: translate(5px, 3px);
 }
 
-.button:hover {
+.gb:hover {
     transform: translateY(-2px);
 }
 
-.button:active {
+.gb:active {
     transform: translateY(0);
 }
 
-.button.ana:disabled {
+.gb.ana:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
 }
 
-.button.ans:disabled {
+.gb.ans:disabled {
     color: #cccccc;
     cursor: not-allowed;
 }
 
-.button.active {
+.gb.active {
     background-color: #000000;
     color: #ffffff;
 }
 
-.button.ptr-toggle {
+.gb.ptr-toggle {
     width: auto;
     padding: 0 10px;
 }

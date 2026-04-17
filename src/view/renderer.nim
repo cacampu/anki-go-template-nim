@@ -223,7 +223,7 @@ proc make_branch_button(
     on_click: proc(idx: int), idx: int,
 ) =
   ## 非主分岐の "+" ボタンを生成し、対応するポインターとホバー連動させる
-  let btn = container.h("button", "button ans branch", text = "+")
+  let btn = container.h("button", "gb ans branch", text = "+")
   btn.addEventListener("mouseover", proc(e: Event) =
     pointer.classList.add(cstring("hover-state")))
   btn.addEventListener("mouseout", proc(e: Event) =
@@ -318,9 +318,9 @@ proc init*(base: Element) =
   var ana_btns: array[6, Element]
   var ans_btns: array[8, Element]
   for i, lbl in ["|<", "<<", "<", ">", ">>", ">|"]:
-    ana_btns[i] = ana_cont.h("button", "button ana", text = lbl)
+    ana_btns[i] = ana_cont.h("button", "gb ana", text = lbl)
   for i, lbl in ["|<", "<<", "<", ">", ">>", ">|", "+<", ">+"]:
-    ans_btns[i] = ans_cont.h("button", "button ans", text = lbl)
+    ans_btns[i] = ans_cont.h("button", "gb ans", text = lbl)
   let branches_cont = ans_cont.h("div", "branches-container")
 
   # 情報パネル (card-inner 右側、常に表示)
@@ -351,12 +351,12 @@ proc init*(base: Element) =
   var re_render: proc()
 
   # 分岐ポインタ表示トグル (ans-settings 内)
-  let ptr_btn = ans_settings.h("button", "button ans ptr-toggle", text = "分岐表示")
+  let ptr_btn = ans_settings.h("button", "gb ans ptr-toggle", text = "分岐表示")
   ptr_btn.addEventListener("click", proc(e: Event) =
     view.show_ans_ptr = not view.show_ans_ptr
     ptr_btn.className = cstring(
-      if view.show_ans_ptr: "button ans ptr-toggle active"
-      else: "button ans ptr-toggle")
+      if view.show_ans_ptr: "gb ans ptr-toggle active"
+      else: "gb ans ptr-toggle")
     if view.show_ans_ptr:
       pointer_grid.style.removeProperty("display")
     else:
