@@ -7,11 +7,11 @@
 nimcache/
 /sgf
 /docs
+/memory
 
 tests/*
 !tests/*.nim
 !tests/*.nims
-config.nims
 scripts/*
 !scripts/*.nim
 !scripts/*.py
