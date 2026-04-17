@@ -43,8 +43,8 @@ def file_to_deck(path: Path) -> str:
 
 
 def file_to_id(path: Path) -> str:
-    """sgf/A/B/file.sgf → 'A/B/file' (拡張子なし、区切りは常に /)"""
-    return path.relative_to(SGF_DIR).with_suffix("").as_posix()
+    """sgf/A/B/file.sgf → 'file' (ファイル名のみ、拡張子なし)"""
+    return path.stem
 
 
 def main():
@@ -57,13 +57,6 @@ def main():
     if DRY_RUN:
         print("[DRY RUN] No cards will be added.\n")
 
-    # 必要なデッキを先にすべて作成する
-    decks = sorted({file_to_deck(p) for p in files})
-    if not DRY_RUN:
-        for deck in decks:
-            ankiconnect("createDeck", deck=deck)
-        print(f"Ensured {len(decks)} deck(s).\n")
-
     # デッキ単位にファイルをグループ化
     from collections import defaultdict
     deck_files: dict[str, list[Path]] = defaultdict(list)
@@ -75,6 +68,10 @@ def main():
     errors = 0
 
     for deck, paths in sorted(deck_files.items()):
+        # デッキ作成 (既存の場合は何もしない)
+        if not DRY_RUN:
+            ankiconnect("createDeck", deck=deck)
+
         # デッキ内の既存 ID を一括取得
         existing_ids: set[str] = set()
         result = ankiconnect("findNotes", query=f"deck:\"{deck}\"")
