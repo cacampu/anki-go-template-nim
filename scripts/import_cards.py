@@ -17,7 +17,7 @@ import urllib.request
 from pathlib import Path
 
 ANKI_CONNECT_URL = "http://localhost:8765"
-MODEL_NAME = "Go Problem"
+MODEL_NAME = "InteractiveGoCard"
 SGF_DIR = Path(__file__).parent.parent / "sgf"
 DRY_RUN = "--dry-run" in sys.argv
 

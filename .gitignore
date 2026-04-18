@@ -6,6 +6,7 @@
 /tmp
 nimcache/
 /sgf
+/sgf-processed
 /docs
 /memory
 

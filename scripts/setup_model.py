@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AnkiConnect を使ってノートタイプ (Go Problem) を作成・更新する。
+AnkiConnect を使ってノートタイプ (InteractiveGoCard) を作成・更新する。
 dist/front.html, dist/back.html, dist/style.css を読み込んでテンプレートに設定する。
 
 Usage:
@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 
 ANKI_CONNECT_URL = "http://localhost:8765"
-MODEL_NAME = "Go Problem"
+MODEL_NAME = "InteractiveGoCard"
 DIST_DIR = Path(__file__).parent.parent / "dist"
 
 

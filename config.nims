@@ -20,7 +20,3 @@ task release, "Anki用ビルド (dist/)":
 task testjs, "jsバックエンドでテスト":
   withDir thisDir():
     exec "nimble test --backend:js"
-
-task dbg, "デバッグ":
-  withDir thisDir():
-    exec "nim c -r --hints:off debug/debug.nim"
