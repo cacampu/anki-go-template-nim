@@ -48,7 +48,7 @@ src/ (Nim)
 
 ### スクリプト
 
-**`scripts/setup_model.py`** — AnkiConnectを通じて「Go Problem」ノートタイプをAnkiに登録します。`dist/` のHTML/CSSをテンプレートとして設定します。
+**`scripts/setup_model.py`** — AnkiConnectを通じて「InteractiveGoCard」ノートタイプをAnkiに登録します。`dist/` のHTML/CSSをテンプレートとして設定します。
 
 **`scripts/import_cards.py`** — `sgf/` ディレクトリを再帰的に走査し、SGFファイルをカードとしてインポートします。`sgf/` 以下のディレクトリ構造がAnkiのデッキ階層に対応します。
 

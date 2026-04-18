@@ -48,7 +48,7 @@ src/ (Nim)
 
 ### Scripts
 
-**`scripts/setup_model.py`** — Registers the "Go Problem" note type in Anki via AnkiConnect, using the HTML/CSS from `dist/` as the card template.
+**`scripts/setup_model.py`** — Registers the "InteractiveGoCard" note type in Anki via AnkiConnect, using the HTML/CSS from `dist/` as the card template.
 
 **`scripts/import_cards.py`** — Recursively scans `sgf/` and imports SGF files as cards. The directory structure under `sgf/` maps to Anki's deck hierarchy.
 
