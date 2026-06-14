@@ -154,7 +154,7 @@ proc put_marker_svg*(grid: Element, symbol_id: string): Element =
   ## data-x/y・grid-column/row は呼び出し元で設定する。
   result = grid.hsvg("svg", "marker",
     attrs = [("viewBox", "0 0 100 100"),
-             ("width", $cell_size), ("height", $cell_size)])
+             ("width", "100%"), ("height", "100%")])
   discard result.hsvg("use", attrs = [("href", "#" & symbol_id)])
 
 proc get_mark*(grid: Element, coord: Coord): Element =
