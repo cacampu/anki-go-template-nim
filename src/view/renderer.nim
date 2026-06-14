@@ -61,14 +61,6 @@ proc put_label_svg(grid: Element, text: string): Element =
       txt.setAttribute("font-size", cstring($(init_font_size * scale)))
   txt.style.removeProperty("opacity")
 
-proc put_marker_svg(grid: Element, symbol_id: string): Element =
-  ## SVG スプライト参照のグリッドセル (<svg><use>) を生成して grid に追加する。
-  ## data-x/y・grid-column/row は呼び出し元で設定する。
-  result = grid.hsvg("svg", "marker",
-    attrs = [("viewBox", "0 0 100 100"),
-             ("width", $cell_size), ("height", $cell_size)])
-  discard result.hsvg("use", attrs = [("href", "#" & symbol_id)])
-
 proc put_marker(grid: Element, key: string, coord: Coord, text: string = ""): Element =
   if grid.get_marker(coord) != nil: return
   case key

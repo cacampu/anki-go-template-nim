@@ -81,13 +81,82 @@ body {
     padding: 4px 8px;
 }
 
-.edit-pane-board {
+.edit-pane-content {
     flex: 1;
     overflow: auto;
     padding: 16px;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.edit-pane-board {
+    display: flex;
     align-items: flex-start;
     justify-content: center;
+}
+
+.mode-toggle,
+.tool-palette,
+.play-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mode-btn,
+.tool-btn {
+    padding: 6px 14px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: #ffffff;
+}
+
+.mode-btn.active,
+.tool-btn.active {
+    background-color: #000000;
+    color: #ffffff;
+    border-color: #000000;
+}
+
+.play-nav button {
+    padding: 6px 12px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: #ffffff;
+}
+
+.play-nav button.disabled {
+    color: #cccccc;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.play-nav .turn-stone {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid #000000;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.comment-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 400px;
+}
+
+.comment-edit textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 8px;
+    resize: vertical;
 }
 
 .empty-message {

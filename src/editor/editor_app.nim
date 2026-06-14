@@ -1,33 +1,31 @@
 import ../view/board_draw
+import ../core/[types, board]
 import editor_state
 import std/[dom, strformat, strutils]
 
 ## SGFエディタのメイン画面
 ## - 左ペイン: 全問題のサムネイル一覧 (縦スクロール, 右クリックでコンテキストメニュー)
-## - 右ペイン: 選択中の問題の盤面・名前編集
+## - 右ペイン: 選択中の問題の盤面・モード切替・編集UI
 
 const
   thumb_cell_size = 8
   edit_cell_size  = 32
 
+type
+  Mode = enum
+    PlayMode
+    EditMode
+
+  EditTool = enum
+    StoneTool
+    TrTool
+    SqTool
+    CrTool
+    MaTool
+
 var state = init_editor_state()
-
-## ====== 盤面描画 ======
-
-proc render_board(parent: Element, p: Problem, cell_size: int): Element =
-  result = parent.h("div", "board-side editor-board",
-    styles = [
-      ("--board-size", $p.size),
-      ("--scope-size", $p.size),
-      ("--cell-size", &"{cell_size}px"),
-      ("--offset", "2px"),
-    ])
-  let base = result.h("div", "board-base")
-  let container = base.h("div", "board-container")
-  container.draw_lines(p.size)
-  let stone_grid = container.h("div", "grid stone-grid")
-  discard container.h("div", "grid")  ## marker-grid placeholder (Phase2以降)
-  stone_grid.update_stones(p.to_board())
+var mode = EditMode
+var edit_tool = StoneTool
 
 ## ====== コンテキストメニュー ======
 
@@ -59,7 +57,7 @@ proc render_thumb_list() =
     if pid == state.selected_id:
       item.classList.add(cstring("selected"))
     item.setAttribute("data-id", cstring($pid))
-    discard item.render_board(p, thumb_cell_size)
+    discard item.render_board(p.initial_board(), p.root.props, thumb_cell_size)
     discard item.h("div", "thumb-label", text = p.name)
     item.addEventListener("click", proc(e: Event) =
       state.selected_id = pid
@@ -69,6 +67,87 @@ proc render_thumb_list() =
       let me = cast[MouseEvent](e)
       show_context_menu(me.clientX, me.clientY, pid))
 
+## ====== 編集ペイン ======
+
+proc bind_catcher_click(catcher: Element, idx: int) =
+  catcher.addEventListener("click", proc(e: Event) =
+    let me = cast[MouseEvent](e)
+    let x = int(me.offsetX) div edit_cell_size + 1
+    let y = int(me.offsetY) div edit_cell_size + 1
+    let coord: Coord = (x, y)
+    template p: untyped = state.problems[idx]
+    case mode
+    of PlayMode:
+      if p.current_board()[coord] == Empty:
+        play_move(p, coord)
+    of EditMode:
+      case edit_tool
+      of StoneTool:
+        if p.current == p.root:
+          cycle_stone(p, coord)
+      of TrTool: toggle_mark(p.current, "TR", coord)
+      of SqTool: toggle_mark(p.current, "SQ", coord)
+      of CrTool: toggle_mark(p.current, "CR", coord)
+      of MaTool: toggle_mark(p.current, "MA", coord)
+    render_app())
+
+proc render_mode_toggle(parent: Element, idx: int) =
+  let row = parent.h("div", "mode-toggle")
+  let play_btn = row.h("div", "mode-btn" & (if mode == PlayMode: " active" else: ""), text = "着手モード")
+  let edit_btn = row.h("div", "mode-btn" & (if mode == EditMode: " active" else: ""), text = "編集モード")
+  play_btn.addEventListener("click", proc(e: Event) =
+    mode = PlayMode
+    render_app())
+  edit_btn.addEventListener("click", proc(e: Event) =
+    mode = EditMode
+    render_app())
+
+proc render_tool_palette(parent: Element, idx: int) =
+  let row = parent.h("div", "tool-palette")
+  template p: untyped = state.problems[idx]
+  proc tool_btn(tool: EditTool, label: string) =
+    let btn = row.h("div", "tool-btn" & (if edit_tool == tool: " active" else: ""), text = label)
+    btn.addEventListener("click", proc(e: Event) =
+      edit_tool = tool
+      render_app())
+  if p.current == p.root:
+    tool_btn(StoneTool, "石")
+  tool_btn(TrTool, "△")
+  tool_btn(SqTool, "□")
+  tool_btn(CrTool, "○")
+  tool_btn(MaTool, "×")
+
+proc render_play_nav(parent: Element, idx: int) =
+  let row = parent.h("div", "play-nav")
+  template p: untyped = state.problems[idx]
+  let turn = p.current_board().turn
+  discard row.h("div",
+    if turn == Black: "turn-stone black" else: "turn-stone white")
+  let back_btn = row.h("button", text = "← 戻る")
+  let fwd_btn  = row.h("button", text = "進む →")
+  let del_btn  = row.h("button", text = "✕ このノードを削除")
+  back_btn.set_disabled(p.current == p.root)
+  fwd_btn.set_disabled(p.current.children.len == 0)
+  del_btn.set_disabled(p.current == p.root)
+  back_btn.addEventListener("click", proc(e: Event) =
+    go_to_parent(state.problems[idx])
+    render_app())
+  fwd_btn.addEventListener("click", proc(e: Event) =
+    go_to_first_child(state.problems[idx])
+    render_app())
+  del_btn.addEventListener("click", proc(e: Event) =
+    delete_current_node(state.problems[idx])
+    render_app())
+
+proc render_comment_edit(parent: Element, idx: int) =
+  template p: untyped = state.problems[idx]
+  let box = parent.h("div", "comment-edit")
+  discard box.h("label", text = "コメント")
+  let textarea = box.h("textarea", attrs = [("rows", "3")])
+  textarea.value = cstring(comment(p.current))
+  textarea.addEventListener("change", proc(e: Event) =
+    set_comment(state.problems[idx].current, $textarea.value))
+
 proc render_edit_pane() =
   edit_pane.clear()
   if state.problems.len == 0:
@@ -77,9 +156,21 @@ proc render_edit_pane() =
     name_input.value = cstring("")
     return
   name_input.disabled = false
-  let p = state.selected()
+  let idx = state.selected_index()
+  let p = state.problems[idx]
   name_input.value = cstring(p.name)
-  discard edit_pane.render_board(p, edit_cell_size)
+
+  render_mode_toggle(edit_pane, idx)
+  case mode
+  of EditMode: render_tool_palette(edit_pane, idx)
+  of PlayMode: render_play_nav(edit_pane, idx)
+
+  let board_el = edit_pane.h("div", "edit-pane-board")
+  let result = board_el.render_board(p.current_board(), p.current.props, edit_cell_size, interactive = true)
+  let catcher = result.querySelector(".catcher")
+  bind_catcher_click(catcher, idx)
+
+  render_comment_edit(edit_pane, idx)
 
 proc render_app() =
   prefix_input.value = cstring(state.prefix)
@@ -93,6 +184,7 @@ proc render_app() =
 
 proc init*(root: Element) =
   root.clear()
+  put_svg_defs(root)
 
   let header = root.h("div", "editor-header")
   discard header.h("label", text = "prefix: ")
@@ -108,7 +200,7 @@ proc init*(root: Element) =
   let edit_main = body.h("div", "edit-main")
   let name_pane = edit_main.h("div", "edit-pane")
   name_input = name_pane.h("input", "name-input", attrs = [("type", "text")])
-  edit_pane = edit_main.h("div", "edit-pane-board")
+  edit_pane = edit_main.h("div", "edit-pane-content")
 
   ctx_menu = root.h("div", "context-menu", styles = [("display", "none")])
   let dup_item = ctx_menu.h("div", "context-menu-item", text = "複製")

@@ -1,5 +1,5 @@
-import ../core/[board, types]
-import std/[dom, strformat]
+import ../core/[board, types, properties]
+import std/[dom, strformat, tables]
 
 ## 盤面描画の共通プリミティブ (Anki用ビューア・SGFエディタの両方から利用する)
 
@@ -143,3 +143,64 @@ proc update_stones*(grid: Element, board: Board) =
       of Black: grid.put_stone(coord, Black)
       of White: grid.put_stone(coord, White)
       of Empty: grid.remove_stone(coord)
+
+## ====== マーク (TR/SQ/CR/MA) の描画 ======
+
+proc put_marker_svg*(grid: Element, symbol_id: string): Element =
+  ## SVG スプライト参照のグリッドセル (<svg><use>) を生成して grid に追加する。
+  ## data-x/y・grid-column/row は呼び出し元で設定する。
+  result = grid.hsvg("svg", "marker",
+    attrs = [("viewBox", "0 0 100 100"),
+             ("width", $cell_size), ("height", $cell_size)])
+  discard result.hsvg("use", attrs = [("href", "#" & symbol_id)])
+
+proc get_mark*(grid: Element, coord: Coord): Element =
+  grid.querySelector(cstring(coord_sel(coord)))
+
+proc put_mark*(grid: Element, key: string, coord: Coord): Element =
+  if grid.get_mark(coord) != nil: return
+  case key
+  of "MA": result = grid.put_marker_svg("m-cross")
+  of "TR": result = grid.put_marker_svg("m-triangle")
+  of "CR": result = grid.put_marker_svg("m-circle")
+  of "SQ": result = grid.put_marker_svg("m-square")
+  else: return
+  result.setAttribute("data-x", cstring($coord.x))
+  result.setAttribute("data-y", cstring($coord.y))
+  result.style.setProperty("grid-column", cstring($coord.x))
+  result.style.setProperty("grid-row",    cstring($coord.y))
+
+proc update_marks*(grid: Element, props: Properties, board: Board) =
+  for key in ["TR", "SQ", "CR", "MA"]:
+    if key notin props: continue
+    for v in props[key]:
+      let coord = parseCoord(v)
+      let el = grid.put_mark(key, coord)
+      if el == nil: continue
+      case board[coord]
+      of Black: el.classList.add(cstring("onB"))
+      of White: el.classList.add(cstring("onW"))
+      of Empty: discard
+
+## ====== 盤面全体の描画 ======
+
+proc render_board*(
+    parent: Element, board: Board, props: Properties,
+    cell_size: int, interactive: bool = false,
+): Element =
+  result = parent.h("div", "board-side editor-board",
+    styles = [
+      ("--board-size", $board.size),
+      ("--scope-size", $board.size),
+      ("--cell-size", &"{cell_size}px"),
+      ("--offset", "2px"),
+    ])
+  let base = result.h("div", "board-base")
+  let container = base.h("div", "board-container")
+  container.draw_lines(board.size)
+  let stone_grid = container.h("div", "grid stone-grid")
+  let mark_grid  = container.h("div", "grid")
+  if interactive:
+    discard container.h("div", "catcher")
+  stone_grid.update_stones(board)
+  mark_grid.update_marks(props, board)
