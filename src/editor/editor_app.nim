@@ -64,6 +64,19 @@ var prefix_input, counter_value_input, counter_padding_input, name_input: Elemen
 
 proc render_app()
 
+proc bind_thumb_item(item: Element, pid: int) =
+  ## pid をクロージャで個別に捕捉するため、ループ本体から分離したprocで束縛する
+  ## (forループ内で直接addEventListenerすると、Nimのjsバックエンドで
+  ## 全イテレーションが単一のクロージャ環境を共有してしまい、
+  ## どのサムネイルをクリックしても最後のpidが使われてしまう)
+  item.addEventListener("click", proc(e: Event) =
+    state.selected_id = pid
+    render_app())
+  item.addEventListener("contextmenu", proc(e: Event) =
+    e.preventDefault()
+    let me = cast[MouseEvent](e)
+    show_context_menu(me.clientX, me.clientY, pid))
+
 proc render_thumb_list() =
   thumb_list.clear()
   for p in state.problems:
@@ -74,13 +87,7 @@ proc render_thumb_list() =
     item.setAttribute("data-id", cstring($pid))
     discard item.render_board(p.initial_board(), p.root, thumb_cell_size, show_pointers = false)
     discard item.h("div", "thumb-label", text = p.name)
-    item.addEventListener("click", proc(e: Event) =
-      state.selected_id = pid
-      render_app())
-    item.addEventListener("contextmenu", proc(e: Event) =
-      e.preventDefault()
-      let me = cast[MouseEvent](e)
-      show_context_menu(me.clientX, me.clientY, pid))
+    item.bind_thumb_item(pid)
 
 ## ====== 編集ペイン ======
 
@@ -297,13 +304,17 @@ proc export_all(): Future[void] {.async.} =
   if not hasDirectoryPicker():
     window.alert(cstring("このブラウザはエクスポート機能(File System Access API)に対応していません。Chrome等をご利用ください。"))
     return
-  try:
-    let root_dir = await showDirectoryPicker()
-    for p in state.problems:
-      await export_problem(root_dir, state.prefix, p)
-    window.alert(cstring("書き出しが完了しました。"))
-  except:
-    discard ## ピッカーのキャンセル(AbortError)等は無視する
+  let root_dir = await showDirectoryPicker()
+  for p in state.problems:
+    await export_problem(root_dir, state.prefix, p)
+  window.alert(cstring("書き出しが完了しました。"))
+
+proc handle_export_error(reason: Error) =
+  ## ピッカーのキャンセル(AbortError)は無視し、それ以外のエラーは表示する。
+  ## (asyncjsのFuture内でNimのtry/exceptを使うとraiseDefectで再送出されてしまうため、
+  ## 呼び出し側でFuture.catchを使う)
+  if $reason.name != "AbortError":
+    window.alert(cstring("書き出しに失敗しました: " & $reason.message))
 
 ## ====== 初期化 ======
 
@@ -356,7 +367,7 @@ proc init*(root: Element) =
     render_app())
 
   export_btn.addEventListener("click", proc(e: Event) =
-    discard export_all())
+    discard export_all().catch(handle_export_error))
 
   name_input.addEventListener("change", proc(e: Event) =
     if state.problems.len == 0: return
