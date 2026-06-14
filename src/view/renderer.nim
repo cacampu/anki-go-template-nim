@@ -1,5 +1,6 @@
 import ../core/[board, gametree, properties, types]
 import ../app/[state, handler]
+import ../logic/comment
 import std/[dom, strformat, strutils, tables]
 import results
 
@@ -420,7 +421,7 @@ proc init*(base: Element) =
   proc update_comment() =
     comment_box.textContent =
       if state.tree.current_node().props.hasKey("C"):
-        cstring(state.tree.current_node().props["C"][0])
+        cstring(render_comment(state.tree.current_node().props["C"][0], view.show_ans))
       else:
         cstring("")
 
