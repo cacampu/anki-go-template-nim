@@ -106,6 +106,12 @@ proc add_new_problem*(state: var EditorState, size: int = default_size) =
   state.problems.add(p)
   state.selected_id = p.id
 
+proc reset_problem*(p: var Problem) =
+  ## root ノードを盤サイズのみ保持した新規作成直後の状態に戻す
+  let root = Node(props: {"SZ": @[$p.size]}.toOrderedTable)
+  p.root = root
+  p.current = root
+
 proc duplicate_problem*(state: var EditorState, src: Problem) =
   var props: Properties
   for key in ["SZ", "AB", "AW", "PL"]:

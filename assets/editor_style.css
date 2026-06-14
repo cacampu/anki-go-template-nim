@@ -133,6 +133,12 @@ body {
     border-color: #000000;
 }
 
+.reset-btn {
+    margin-left: 8px;
+    color: #cc0000;
+    border-color: #cc0000;
+}
+
 .play-nav button {
     padding: 6px 12px;
     border: 1px solid #cccccc;

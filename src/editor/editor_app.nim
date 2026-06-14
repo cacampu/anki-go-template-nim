@@ -200,6 +200,11 @@ proc render_tool_palette(parent: Element, idx: int) =
     turn_btn.addEventListener("click", proc(e: Event) =
       toggle_turn(state.problems[idx])
       render_app())
+    let reset_btn = row.h("div", "tool-btn reset-btn", text = "リセット")
+    reset_btn.addEventListener("click", proc(e: Event) =
+      if window.confirm(cstring("盤面を新規作成時の状態にリセットしますか? (元に戻せません)")):
+        reset_problem(state.problems[idx])
+        render_app())
 
 proc render_play_nav(parent: Element, idx: int) =
   let row = parent.h("div", "play-nav")
