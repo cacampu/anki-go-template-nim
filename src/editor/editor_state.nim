@@ -1,5 +1,5 @@
 import ../core/[types, board, gametree, properties]
-import ../logic/rules
+import ../logic/[rules, parser]
 import results
 import std/[algorithm, strutils, sequtils, tables]
 
@@ -76,6 +76,10 @@ proc current_board*(p: Problem): Board =
     let applied = apply_move(result, move)
     if applied.isOk:
       result = applied.get
+
+proc problem_sgf*(p: Problem): string =
+  ## 盤面1つ分のSGF文字列 (書き出し用)
+  parser.serialize(initTree(p.root))
 
 proc selected*(state: EditorState): Problem =
   for p in state.problems:

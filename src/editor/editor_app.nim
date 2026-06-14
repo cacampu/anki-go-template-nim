@@ -1,7 +1,7 @@
 import ../view/board_draw
 import ../core/[types, board]
 import editor_state
-import std/[dom, strformat, strutils]
+import std/[dom, strformat, strutils, asyncjs, jsffi]
 
 ## SGFエディタのメイン画面
 ## - 左ペイン: 全問題のサムネイル一覧 (縦スクロール, 右クリックでコンテキストメニュー)
@@ -273,6 +273,38 @@ proc render_app() =
   render_edit_pane()
   hide_context_menu()
 
+## ====== SGF書き出し (File System Access API) ======
+
+proc hasDirectoryPicker(): bool {.importjs: "(typeof window.showDirectoryPicker === 'function')".}
+proc showDirectoryPicker(): Future[JsObject] {.importjs: "window.showDirectoryPicker()".}
+proc getDirectoryHandle(parent: JsObject, name: cstring): Future[JsObject] {.importjs: "#.getDirectoryHandle(#, {create: true})".}
+proc getFileHandle(parent: JsObject, name: cstring): Future[JsObject] {.importjs: "#.getFileHandle(#, {create: true})".}
+proc createWritable(file: JsObject): Future[JsObject] {.importjs: "#.createWritable()".}
+proc writeText(w: JsObject, data: cstring): Future[JsObject] {.importjs: "#.write(#)".}
+proc closeWritable(w: JsObject): Future[JsObject] {.importjs: "#.close()".}
+
+proc export_problem(root_dir: JsObject, prefix: string, p: Problem): Future[void] {.async.} =
+  var dir = root_dir
+  for seg in prefix.split("::"):
+    if seg.len == 0: continue
+    dir = await dir.getDirectoryHandle(cstring(seg))
+  let file = await dir.getFileHandle(cstring(p.name & ".sgf"))
+  let writable = await file.createWritable()
+  discard await writable.writeText(cstring(p.problem_sgf()))
+  discard await writable.closeWritable()
+
+proc export_all(): Future[void] {.async.} =
+  if not hasDirectoryPicker():
+    window.alert(cstring("このブラウザはエクスポート機能(File System Access API)に対応していません。Chrome等をご利用ください。"))
+    return
+  try:
+    let root_dir = await showDirectoryPicker()
+    for p in state.problems:
+      await export_problem(root_dir, state.prefix, p)
+    window.alert(cstring("書き出しが完了しました。"))
+  except:
+    discard ## ピッカーのキャンセル(AbortError)等は無視する
+
 ## ====== 初期化 ======
 
 proc init*(root: Element) =
@@ -287,6 +319,7 @@ proc init*(root: Element) =
   discard header.h("label", text = " パディング: ")
   counter_padding_input = header.h("input", attrs = [("type", "number"), ("size", "2")])
   let new_btn = header.h("button", text = "+ 新規作成")
+  let export_btn = header.h("button", text = "SGFを書き出し")
 
   let body = root.h("div", "editor-body")
   thumb_list = body.h("div", "thumb-list")
@@ -321,6 +354,9 @@ proc init*(root: Element) =
     state.add_new_problem(size)
     state.sort_problems()
     render_app())
+
+  export_btn.addEventListener("click", proc(e: Event) =
+    discard export_all())
 
   name_input.addEventListener("change", proc(e: Event) =
     if state.problems.len == 0: return
