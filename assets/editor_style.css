@@ -1,0 +1,116 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+}
+
+#sgf-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.editor-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 2px solid #535353;
+    flex-shrink: 0;
+}
+
+.editor-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.thumb-list {
+    width: 154px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid #cccccc;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.thumb-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.thumb-item:hover {
+    background-color: #f0f0f0;
+}
+
+.thumb-item.selected {
+    border-color: #5dd445;
+    background-color: #eaffea;
+}
+
+.thumb-item .board-base {
+    pointer-events: none;
+}
+
+.thumb-label {
+    font-size: 13px;
+    word-break: break-all;
+    text-align: center;
+}
+
+.edit-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.edit-pane {
+    padding: 12px 16px;
+}
+
+.name-input {
+    font-size: 16px;
+    padding: 4px 8px;
+}
+
+.edit-pane-board {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.empty-message {
+    color: #888888;
+    margin: 40px;
+}
+
+.context-menu {
+    position: fixed;
+    z-index: 100;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.context-menu-item:hover {
+    background-color: #f0f0f0;
+}
