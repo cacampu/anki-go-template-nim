@@ -369,6 +369,8 @@ proc init*(root: Element) =
     let size = if state.problems.len > 0: state.selected().size else: default_size
     state.add_new_problem(size)
     state.sort_problems()
+    mode = EditMode
+    edit_tool = StoneTool
     render_app())
 
   export_btn.addEventListener("click", proc(e: Event) =
@@ -387,6 +389,8 @@ proc init*(root: Element) =
         state.duplicate_problem(p)
         break
     state.sort_problems()
+    mode = EditMode
+    edit_tool = StoneTool
     render_app())
 
   del_item.addEventListener("click", proc(e: Event) =
