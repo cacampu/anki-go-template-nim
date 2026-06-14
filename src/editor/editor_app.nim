@@ -23,9 +23,24 @@ type
     CrTool
     MaTool
 
+  DragAction = enum
+    NoAction
+    PlaceBlack
+    PlaceWhite
+    DeleteStone
+
 var state = init_editor_state()
 var mode = EditMode
 var edit_tool = StoneTool
+var dragging = false
+var drag_action = NoAction
+var drag_last: Coord
+
+proc event_to_coord(e: Event, cell_size, size: int): Coord =
+  let me = cast[MouseEvent](e)
+  let x = clamp(int(me.offsetX) div cell_size + 1, 1, size)
+  let y = clamp(int(me.offsetY) div cell_size + 1, 1, size)
+  (x, y)
 
 ## ====== コンテキストメニュー ======
 
@@ -70,21 +85,63 @@ proc render_thumb_list() =
 ## ====== 編集ペイン ======
 
 proc bind_catcher_click(catcher: Element, idx: int) =
-  catcher.addEventListener("click", proc(e: Event) =
+  template p: untyped = state.problems[idx]
+  let sz = p.size
+
+  catcher.addEventListener("contextmenu", proc(e: Event) =
+    e.preventDefault())
+
+  catcher.addEventListener("mousedown", proc(e: Event) =
+    if not (mode == EditMode and edit_tool == StoneTool and p.current == p.root):
+      return
     let me = cast[MouseEvent](e)
-    let x = int(me.offsetX) div edit_cell_size + 1
-    let y = int(me.offsetY) div edit_cell_size + 1
-    let coord: Coord = (x, y)
-    template p: untyped = state.problems[idx]
+    let coord = event_to_coord(e, edit_cell_size, sz)
+    let cur = p.initial_board()[coord]
+    if me.button == 2:
+      if cur == Empty:
+        set_stone(p, coord, White)
+        drag_action = PlaceWhite
+        dragging = true
+      else:
+        set_stone(p, coord, Empty)
+        drag_action = DeleteStone
+        dragging = true
+    else:
+      if cur == Empty:
+        set_stone(p, coord, Black)
+        drag_action = PlaceBlack
+        dragging = true
+      else:
+        invert_stone(p, coord)
+        dragging = false
+    drag_last = coord
+    render_app())
+
+  catcher.addEventListener("mousemove", proc(e: Event) =
+    if not dragging: return
+    let coord = event_to_coord(e, edit_cell_size, sz)
+    if coord == drag_last: return
+    drag_last = coord
+    let cur = p.initial_board()[coord]
+    case drag_action
+    of PlaceBlack:
+      if cur == Empty: set_stone(p, coord, Black)
+    of PlaceWhite:
+      if cur == Empty: set_stone(p, coord, White)
+    of DeleteStone:
+      if cur != Empty: set_stone(p, coord, Empty)
+    of NoAction: discard
+    render_app())
+
+  catcher.addEventListener("click", proc(e: Event) =
+    let coord = event_to_coord(e, edit_cell_size, sz)
     case mode
     of PlayMode:
       if p.current_board()[coord] == Empty:
         play_move(p, coord)
     of EditMode:
       case edit_tool
-      of StoneTool:
-        if p.current == p.root:
-          cycle_stone(p, coord)
+      of StoneTool: discard ## mousedown で処理済み
       of TrTool: toggle_mark(p.current, "TR", coord)
       of SqTool: toggle_mark(p.current, "SQ", coord)
       of CrTool: toggle_mark(p.current, "CR", coord)
@@ -116,6 +173,13 @@ proc render_tool_palette(parent: Element, idx: int) =
   tool_btn(SqTool, "□")
   tool_btn(CrTool, "○")
   tool_btn(MaTool, "×")
+  if p.current == p.root:
+    let turn = p.current_board().turn
+    let turn_btn = row.h("div", "tool-btn turn-toggle",
+      text = (if turn == Black: "● 黒番" else: "○ 白番"))
+    turn_btn.addEventListener("click", proc(e: Event) =
+      toggle_turn(state.problems[idx])
+      render_app())
 
 proc render_play_nav(parent: Element, idx: int) =
   let row = parent.h("div", "play-nav")
@@ -125,6 +189,7 @@ proc render_play_nav(parent: Element, idx: int) =
     if turn == Black: "turn-stone black" else: "turn-stone white")
   let back_btn = row.h("button", text = "← 戻る")
   let fwd_btn  = row.h("button", text = "進む →")
+  let pass_btn = row.h("button", text = "パス")
   let del_btn  = row.h("button", text = "✕ このノードを削除")
   back_btn.set_disabled(p.current == p.root)
   fwd_btn.set_disabled(p.current.children.len == 0)
@@ -134,6 +199,9 @@ proc render_play_nav(parent: Element, idx: int) =
     render_app())
   fwd_btn.addEventListener("click", proc(e: Event) =
     go_to_first_child(state.problems[idx])
+    render_app())
+  pass_btn.addEventListener("click", proc(e: Event) =
+    play_pass(state.problems[idx])
     render_app())
   del_btn.addEventListener("click", proc(e: Event) =
     delete_current_node(state.problems[idx])
@@ -165,12 +233,13 @@ proc render_edit_pane() =
   of EditMode: render_tool_palette(edit_pane, idx)
   of PlayMode: render_play_nav(edit_pane, idx)
 
-  let board_el = edit_pane.h("div", "edit-pane-board")
+  let row = edit_pane.h("div", "edit-pane-row")
+  let board_el = row.h("div", "edit-pane-board")
   let result = board_el.render_board(p.current_board(), p.current.props, edit_cell_size, interactive = true)
   let catcher = result.querySelector(".catcher")
   bind_catcher_click(catcher, idx)
 
-  render_comment_edit(edit_pane, idx)
+  render_comment_edit(row, idx)
 
 proc render_app() =
   prefix_input.value = cstring(state.prefix)
@@ -251,5 +320,8 @@ proc init*(root: Element) =
 
   document.addEventListener("click", proc(e: Event) =
     hide_context_menu())
+
+  document.addEventListener("mouseup", proc(e: Event) =
+    dragging = false)
 
   render_app()

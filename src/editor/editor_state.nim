@@ -147,16 +147,31 @@ proc add_coord(props: var Properties, key: string, coord: Coord) =
   else:
     props[key] = @[$coord]
 
-proc cycle_stone*(p: var Problem, coord: Coord) =
-  ## root ノードのみで有効: 空->黒->白->空 と初期配置 (AB/AW) を切り替える
+proc set_stone*(p: var Problem, coord: Coord, color: PointState) =
+  ## root ノードのみで有効: 初期配置 (AB/AW) を直接指定した色に設定する
   if p.current != p.root: return
-  let cur = p.initial_board()[coord]
   p.root.props.remove_coord("AB", coord)
   p.root.props.remove_coord("AW", coord)
-  case cur
-  of Empty: p.root.props.add_coord("AB", coord)
-  of Black: p.root.props.add_coord("AW", coord)
-  of White: discard
+  case color
+  of Black: p.root.props.add_coord("AB", coord)
+  of White: p.root.props.add_coord("AW", coord)
+  of Empty: discard
+
+proc invert_stone*(p: var Problem, coord: Coord) =
+  ## root ノードのみで有効: 石があれば色を反転する。空点は no-op
+  if p.current != p.root: return
+  case p.initial_board()[coord]
+  of Black: p.set_stone(coord, White)
+  of White: p.set_stone(coord, Black)
+  of Empty: discard
+
+proc toggle_turn*(p: var Problem) =
+  ## root ノードのみで有効: PL プロパティをトグルして手番を交代する
+  if p.current != p.root: return
+  if "PL" in p.root.props and p.root.props["PL"].len > 0 and p.root.props["PL"][0] == "W":
+    p.root.props.del("PL")
+  else:
+    p.root.props["PL"] = @["W"]
 
 proc toggle_mark*(node: Node, key: string, coord: Coord) =
   ## TR/SQ/CR/MA は対等かつ排他: 既に同じ種別が置かれていれば消し、
@@ -182,12 +197,18 @@ proc set_comment*(node: Node, text: string) =
 
 ## ====== 着手モード: ツリー操作 ======
 
-proc play_move*(p: var Problem, coord: Coord) =
-  let turn = p.current_board().turn
-  let move = Move(color: turn, kind: Put, coord: coord)
+proc add_move_node*(p: var Problem, move: Move) =
   let node = Node(props: move.toProperty())
   add_child(p.current, node)
   p.current = node
+
+proc play_move*(p: var Problem, coord: Coord) =
+  let turn = p.current_board().turn
+  add_move_node(p, Move(color: turn, kind: Put, coord: coord))
+
+proc play_pass*(p: var Problem) =
+  let turn = p.current_board().turn
+  add_move_node(p, Move(color: turn, kind: Pass))
 
 proc go_to_parent*(p: var Problem) =
   if p.current != p.root:

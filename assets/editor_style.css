@@ -90,6 +90,12 @@ body {
     gap: 12px;
 }
 
+.edit-pane-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
 .edit-pane-board {
     display: flex;
     align-items: flex-start;
@@ -149,7 +155,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    max-width: 400px;
+    width: 280px;
+    flex-shrink: 0;
 }
 
 .comment-edit textarea {
@@ -157,6 +164,8 @@ body {
     font-size: 14px;
     padding: 6px 8px;
     resize: vertical;
+    flex: 1;
+    min-height: 200px;
 }
 
 .empty-message {
