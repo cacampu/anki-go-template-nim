@@ -123,7 +123,7 @@ proc draw_lines(container: Element, size: int) =
     discard grid.h("div", "star", styles = [("grid-row", $r), ("grid-column", $c)])
   let m = (size + 1) div 2
   let d = if size >= 13: 4 else: 3
-  let lr = [d, size - d]
+  let lr = [d, size - d + 1]
   if size >= 8:
     for r in lr:
       for c in lr: star(r, c)
