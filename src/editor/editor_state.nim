@@ -218,6 +218,26 @@ proc go_to_first_child*(p: var Problem) =
   if p.current.children.len > 0:
     p.current = p.current.children[0]
 
+proc go_to_child*(p: var Problem, idx: int) =
+  if idx >= 0 and idx < p.current.children.len:
+    p.current = p.current.children[idx]
+
+proc can_move_sibling*(p: Problem, delta: int): bool =
+  ## current ノードが親の children 内で delta (±1) 移動できるか
+  if p.current == p.root: return false
+  let siblings = p.current.parent.children
+  let idx = siblings.find(p.current)
+  let new_idx = idx + delta
+  new_idx >= 0 and new_idx < siblings.len
+
+proc move_sibling*(p: var Problem, delta: int) =
+  ## current ノードを親の children 内で隣接要素と入れ替える (children[0] が本筋)
+  if not p.can_move_sibling(delta): return
+  var siblings = p.current.parent.children
+  let idx = siblings.find(p.current)
+  swap(siblings[idx], siblings[idx + delta])
+  p.current.parent.children = siblings
+
 proc delete_current_node*(p: var Problem) =
   if p.current != p.root:
     p.current = remove(p.current)

@@ -72,7 +72,7 @@ proc render_thumb_list() =
     if pid == state.selected_id:
       item.classList.add(cstring("selected"))
     item.setAttribute("data-id", cstring($pid))
-    discard item.render_board(p.initial_board(), p.root.props, thumb_cell_size)
+    discard item.render_board(p.initial_board(), p.root, thumb_cell_size, show_pointers = false)
     discard item.h("div", "thumb-label", text = p.name)
     item.addEventListener("click", proc(e: Event) =
       state.selected_id = pid
@@ -84,7 +84,16 @@ proc render_thumb_list() =
 
 ## ====== 編集ペイン ======
 
-proc bind_catcher_click(catcher: Element, idx: int) =
+proc find_branch_idx(pointer_grid: Element, coord: Coord): int =
+  ## coord に分岐ポインタがあれば data-branch-idx を返す。なければ -1
+  let sel = &".pointer-wrapper[data-x='{coord.x}'][data-y='{coord.y}']"
+  let el = pointer_grid.querySelector(cstring(sel))
+  if el != nil and el.hasAttribute(cstring("data-branch-idx")):
+    parseInt($el.getAttribute("data-branch-idx"))
+  else:
+    -1
+
+proc bind_catcher_click(catcher: Element, pointer_grid: Element, idx: int) =
   template p: untyped = state.problems[idx]
   let sz = p.size
 
@@ -92,6 +101,7 @@ proc bind_catcher_click(catcher: Element, idx: int) =
     e.preventDefault())
 
   catcher.addEventListener("mousedown", proc(e: Event) =
+    e.preventDefault()
     if not (mode == EditMode and edit_tool == StoneTool and p.current == p.root):
       return
     let me = cast[MouseEvent](e)
@@ -137,7 +147,10 @@ proc bind_catcher_click(catcher: Element, idx: int) =
     let coord = event_to_coord(e, edit_cell_size, sz)
     case mode
     of PlayMode:
-      if p.current_board()[coord] == Empty:
+      let branch_idx = find_branch_idx(pointer_grid, coord)
+      if branch_idx >= 0:
+        go_to_child(p, branch_idx)
+      elif p.current_board()[coord] == Empty:
         play_move(p, coord)
     of EditMode:
       case edit_tool
@@ -190,9 +203,13 @@ proc render_play_nav(parent: Element, idx: int) =
   let back_btn = row.h("button", text = "← 戻る")
   let fwd_btn  = row.h("button", text = "進む →")
   let pass_btn = row.h("button", text = "パス")
+  let up_btn   = row.h("button", text = "▲ 順序")
+  let down_btn = row.h("button", text = "▼ 順序")
   let del_btn  = row.h("button", text = "✕ このノードを削除")
   back_btn.set_disabled(p.current == p.root)
   fwd_btn.set_disabled(p.current.children.len == 0)
+  up_btn.set_disabled(not p.can_move_sibling(-1))
+  down_btn.set_disabled(not p.can_move_sibling(1))
   del_btn.set_disabled(p.current == p.root)
   back_btn.addEventListener("click", proc(e: Event) =
     go_to_parent(state.problems[idx])
@@ -202,6 +219,12 @@ proc render_play_nav(parent: Element, idx: int) =
     render_app())
   pass_btn.addEventListener("click", proc(e: Event) =
     play_pass(state.problems[idx])
+    render_app())
+  up_btn.addEventListener("click", proc(e: Event) =
+    move_sibling(state.problems[idx], -1)
+    render_app())
+  down_btn.addEventListener("click", proc(e: Event) =
+    move_sibling(state.problems[idx], 1)
     render_app())
   del_btn.addEventListener("click", proc(e: Event) =
     delete_current_node(state.problems[idx])
@@ -235,9 +258,10 @@ proc render_edit_pane() =
 
   let row = edit_pane.h("div", "edit-pane-row")
   let board_el = row.h("div", "edit-pane-board")
-  let result = board_el.render_board(p.current_board(), p.current.props, edit_cell_size, interactive = true)
+  let result = board_el.render_board(p.current_board(), p.current, edit_cell_size, interactive = true)
   let catcher = result.querySelector(".catcher")
-  bind_catcher_click(catcher, idx)
+  let pointer_grid = result.querySelector(".pointer-grid")
+  bind_catcher_click(catcher, pointer_grid, idx)
 
   render_comment_edit(row, idx)
 

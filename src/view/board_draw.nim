@@ -1,7 +1,10 @@
-import ../core/[board, types, properties]
+import ../core/[board, types, properties, gametree]
 import std/[dom, strformat, tables]
 
 ## 盤面描画の共通プリミティブ (Anki用ビューア・SGFエディタの両方から利用する)
+
+## gametree.Node と dom.Node の名前衝突を回避するエイリアス
+type GameNode* = gametree.Node
 
 const cell_size* = 29  ## CSS の --cell-size と合わせる (px)
 
@@ -182,11 +185,42 @@ proc update_marks*(grid: Element, props: Properties, board: Board) =
       of White: el.classList.add(cstring("onW"))
       of Empty: discard
 
+## ====== 分岐ポインタ・直前手ポインタの描画 ======
+
+proc put_pointer*(grid: Element, key: string, coord: Coord): Element =
+  case key
+  of "ansPtr":      result = grid.hNested("pointer-wrapper", "pointer ans")
+  of "branchPtr":   result = grid.hNested("pointer-wrapper", "pointer branch")
+  of "lastMovePtr": result = grid.h("div", "pointer last-move")
+  else: return
+  result.setAttribute("data-x", cstring($coord.x))
+  result.setAttribute("data-y", cstring($coord.y))
+  result.style.setProperty("grid-column", cstring($coord.x))
+  result.style.setProperty("grid-row",    cstring($coord.y))
+
+proc update_pointers*(grid: Element, node: GameNode, board: Board) =
+  for i, child in node.children:
+    let move: Move = child.props
+    if move.kind != Put: continue
+    let key = if i == 0: "ansPtr" else: "branchPtr"
+    let el = grid.put_pointer(key, move.coord)
+    if el == nil: continue
+    el.setAttribute("data-branch-idx", cstring($i))
+  if "B" in node.props or "W" in node.props:
+    let move: Move = node.props
+    if move.kind == Put:
+      let el = grid.put_pointer("lastMovePtr", move.coord)
+      if el != nil:
+        case board[move.coord]
+        of Black: el.classList.add(cstring("onB"))
+        of White: el.classList.add(cstring("onW"))
+        of Empty: discard
+
 ## ====== 盤面全体の描画 ======
 
 proc render_board*(
-    parent: Element, board: Board, props: Properties,
-    cell_size: int, interactive: bool = false,
+    parent: Element, board: Board, node: GameNode,
+    cell_size: int, interactive: bool = false, show_pointers: bool = true,
 ): Element =
   result = parent.h("div", "board-side editor-board",
     styles = [
@@ -198,9 +232,12 @@ proc render_board*(
   let base = result.h("div", "board-base")
   let container = base.h("div", "board-container")
   container.draw_lines(board.size)
-  let stone_grid = container.h("div", "grid stone-grid")
-  let mark_grid  = container.h("div", "grid")
+  let stone_grid   = container.h("div", "grid stone-grid")
+  let mark_grid    = container.h("div", "grid")
+  let pointer_grid = container.h("div", "grid pointer-grid")
   if interactive:
     discard container.h("div", "catcher")
   stone_grid.update_stones(board)
-  mark_grid.update_marks(props, board)
+  mark_grid.update_marks(node.props, board)
+  if show_pointers:
+    pointer_grid.update_pointers(node, board)
