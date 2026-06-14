@@ -3,6 +3,7 @@
 /sandbox
 /dist
 /dist-dev
+/editor
 /tmp
 nimcache/
 /sgf
