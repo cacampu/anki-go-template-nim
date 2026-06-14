@@ -11,10 +11,17 @@ import std/strutils
 type CommentSection = enum
   Common, FrontOnly, BackOnly
 
+proc normalize_linebreaks(s: string): string =
+  ## Ankiのフィールド editor で改行が `<br>` 系タグに書き換えられるため、
+  ## 表示前に通常の改行 (\n) へ戻す。
+  result = s
+  for tag in ["<br>", "<br/>", "<br />", "<BR>", "<BR/>", "<BR />"]:
+    result = result.replace(tag, "\n")
+
 proc render_comment*(text: string, show_ans: bool): string =
   var section = Common
   var lines: seq[string]
-  for line in text.splitLines():
+  for line in text.normalize_linebreaks().splitLines():
     case line.strip()
     of "@front": section = FrontOnly
     of "@back": section = BackOnly
