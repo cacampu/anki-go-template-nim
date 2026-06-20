@@ -15,7 +15,7 @@ task release, "Anki用ビルド (dist/)":
     mkDir "dist"
     mkDir "tmp"
     exec "nim js -d:release --opt:size --hints:off -o:tmp/main.js src/main.nim"
-    exec "nim r --hints:off scripts/build.nim"
+    exec "nim r --backend:c --hints:off scripts/build.nim"
 
 # SGFエディタビルド: editor/ にJS/CSS/HTMLを出力してブラウザで使える状態にする
 task editor, "SGFエディタビルド (editor/)":

@@ -49,6 +49,7 @@ h2 {
 .turn-row {
     display: flex;
     align-items: center;
+    gap: 8px;
 }
 
 .turn-stone {
@@ -58,6 +59,39 @@ h2 {
     border: 1px solid #000000;
     box-sizing: border-box;
     flex-shrink: 0;
+}
+
+.pass-btn {
+    border: 1px solid #000000;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #000000;
+    padding: 1px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.pass-btn.last-move {
+    border-radius: 0;
+}
+
+.pass-btn.ans {
+    background-color: #8ddb7e;
+}
+
+.pass-btn.ans.hover-state {
+    background-color: #00b600;
+}
+
+.pass-btn.branch {
+    background-color: #b8b8b8;
+}
+
+.pass-btn.branch.hover-state {
+    background-color: #313131;
+    color: #ffffff;
 }
 
 .comment-box {

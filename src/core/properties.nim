@@ -26,10 +26,10 @@ converter toProperty*(move: Move): Properties =
       ""
   result[turn_color] = @[coord]
 
-converter toMove*(props: Properties): Move =
-  proc is_pass(coord_str: string): bool =
-    coord_str == "" or coord_str == "tt"
+proc is_pass*(coord_str: string): bool =
+  coord_str == "" or coord_str == "tt"
 
+converter toMove*(props: Properties): Move =
   if "B" in props:
     let coord_str = props["B"][0]
     if coord_str.is_pass():
