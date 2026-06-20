@@ -8,25 +8,26 @@ import std/[algorithm, strutils, sequtils, tables]
 const default_size* = 19
 
 type Problem* = object
-  id*: int             ## 安定した識別子 (ソート後も選択状態を維持するために使う)
-  name*: string        ## "{i}" または "{i}_{j}" (例: "04", "09_1")
-  root*: Node          ## SGFツリーのルートノード (SZ/AB/AW/PL を保持)
-  current*: Node       ## 現在表示・編集中のノード
+  id*: int
+    ## 安定した識別子 (ソート後も選択状態を維持するために使う)
+  name*: string ## "{i}" または "{i}_{j}" (例: "04", "09_1")
+  root*: Node ## SGFツリーのルートノード (SZ/AB/AW/PL を保持)
+  current*: Node ## 現在表示・編集中のノード
 
 type CounterConfig* = object
   value*: int
   padding*: int
 
 type EditorState* = object
-  prefix*: string        ## "隅の死活::6目型::"
+  prefix*: string ## "隅の死活::6目型::"
   problems*: seq[Problem]
-  selected_id*: int       ## 選択中(編集中) Problem の id
+  selected_id*: int ## 選択中(編集中) Problem の id
   i_counter*: CounterConfig
   next_id: int
 
 proc init_editor_state*(): EditorState =
   result.prefix = ""
-  result.i_counter = CounterConfig(value: 0, padding: 2)
+  result.i_counter = CounterConfig(value: 1, padding: 2)
   result.next_id = 1
 
 proc pad_number(n: int, padding: int): string =
@@ -35,8 +36,8 @@ proc pad_number(n: int, padding: int): string =
     result = "0" & result
 
 proc next_name(state: var EditorState): string =
+  result = pad_number(state.i_counter.value, state.i_counter.padding)
   state.i_counter.value += 1
-  pad_number(state.i_counter.value, state.i_counter.padding)
 
 proc alloc_id(state: var EditorState): int =
   result = state.next_id
@@ -45,8 +46,10 @@ proc alloc_id(state: var EditorState): int =
 ## ====== 盤面サイズ・局面の計算 ======
 
 proc size*(p: Problem): int =
-  if "SZ" in p.root.props: parseInt(p.root.props["SZ"][0])
-  else: default_size
+  if "SZ" in p.root.props:
+    parseInt(p.root.props["SZ"][0])
+  else:
+    default_size
 
 proc initial_board*(p: Problem): Board =
   result = initBoard(p.size)
@@ -102,7 +105,8 @@ proc selected_mut*(state: var EditorState): var Problem =
 
 proc add_new_problem*(state: var EditorState, size: int = default_size) =
   let root = Node(props: {"SZ": @[$size]}.toOrderedTable)
-  let p = Problem(id: state.alloc_id(), name: state.next_name(), root: root, current: root)
+  let p =
+    Problem(id: state.alloc_id(), name: state.next_name(), root: root, current: root)
   state.problems.add(p)
   state.selected_id = p.id
 
@@ -118,7 +122,8 @@ proc duplicate_problem*(state: var EditorState, src: Problem) =
     if key in src.root.props:
       props[key] = src.root.props[key]
   let root = Node(props: props)
-  let p = Problem(id: state.alloc_id(), name: state.next_name(), root: root, current: root)
+  let p =
+    Problem(id: state.alloc_id(), name: state.next_name(), root: root, current: root)
   state.problems.add(p)
   state.selected_id = p.id
 
@@ -131,7 +136,8 @@ proc remove_problem*(state: var EditorState, id: int) =
         r = i
         break
     r
-  if idx < 0: return
+  if idx < 0:
+    return
   state.problems.delete(idx)
   if was_selected and state.problems.len > 0:
     let next_idx = min(idx, state.problems.len - 1)
@@ -159,25 +165,34 @@ proc add_coord(props: var Properties, key: string, coord: Coord) =
 
 proc set_stone*(p: var Problem, coord: Coord, color: PointState) =
   ## root ノードのみで有効: 初期配置 (AB/AW) を直接指定した色に設定する
-  if p.current != p.root: return
+  if p.current != p.root:
+    return
   p.root.props.remove_coord("AB", coord)
   p.root.props.remove_coord("AW", coord)
   case color
-  of Black: p.root.props.add_coord("AB", coord)
-  of White: p.root.props.add_coord("AW", coord)
-  of Empty: discard
+  of Black:
+    p.root.props.add_coord("AB", coord)
+  of White:
+    p.root.props.add_coord("AW", coord)
+  of Empty:
+    discard
 
 proc invert_stone*(p: var Problem, coord: Coord) =
   ## root ノードのみで有効: 石があれば色を反転する。空点は no-op
-  if p.current != p.root: return
+  if p.current != p.root:
+    return
   case p.initial_board()[coord]
-  of Black: p.set_stone(coord, White)
-  of White: p.set_stone(coord, Black)
-  of Empty: discard
+  of Black:
+    p.set_stone(coord, White)
+  of White:
+    p.set_stone(coord, Black)
+  of Empty:
+    discard
 
 proc toggle_turn*(p: var Problem) =
   ## root ノードのみで有効: PL プロパティをトグルして手番を交代する
-  if p.current != p.root: return
+  if p.current != p.root:
+    return
   if "PL" in p.root.props and p.root.props["PL"].len > 0 and p.root.props["PL"][0] == "W":
     p.root.props.del("PL")
   else:
@@ -196,8 +211,10 @@ proc toggle_mark*(node: Node, key: string, coord: Coord) =
   node.props = props
 
 proc comment*(node: Node): string =
-  if "C" in node.props and node.props["C"].len > 0: node.props["C"][0]
-  else: ""
+  if "C" in node.props and node.props["C"].len > 0:
+    node.props["C"][0]
+  else:
+    ""
 
 proc set_comment*(node: Node, text: string) =
   if text.len == 0:
@@ -234,7 +251,8 @@ proc go_to_child*(p: var Problem, idx: int) =
 
 proc can_move_sibling*(p: Problem, delta: int): bool =
   ## current ノードが親の children 内で delta (±1) 移動できるか
-  if p.current == p.root: return false
+  if p.current == p.root:
+    return false
   let siblings = p.current.parent.children
   let idx = siblings.find(p.current)
   let new_idx = idx + delta
@@ -242,7 +260,8 @@ proc can_move_sibling*(p: Problem, delta: int): bool =
 
 proc move_sibling*(p: var Problem, delta: int) =
   ## current ノードを親の children 内で隣接要素と入れ替える (children[0] が本筋)
-  if not p.can_move_sibling(delta): return
+  if not p.can_move_sibling(delta):
+    return
   var siblings = p.current.parent.children
   let idx = siblings.find(p.current)
   swap(siblings[idx], siblings[idx + delta])
@@ -275,10 +294,15 @@ proc compare_natural*(a, b: string): int =
     let (xa, xb) = (sa[i], sb[i])
     if xa.len > 0 and xb.len > 0 and xa[0] in {'0' .. '9'} and xb[0] in {'0' .. '9'}:
       let (na, nb) = (parseInt(xa), parseInt(xb))
-      if na != nb: return cmp(na, nb)
+      if na != nb:
+        return cmp(na, nb)
     else:
-      if xa != xb: return cmp(xa, xb)
+      if xa != xb:
+        return cmp(xa, xb)
   cmp(sa.len, sb.len)
 
 proc sort_problems*(state: var EditorState) =
-  state.problems.sort(proc(a, b: Problem): int = compare_natural(a.name, b.name))
+  state.problems.sort(
+    proc(a, b: Problem): int =
+      compare_natural(a.name, b.name)
+  )

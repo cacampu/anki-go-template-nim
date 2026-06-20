@@ -298,7 +298,7 @@ proc closeWritable(w: JsObject): Future[JsObject] {.importjs: "#.close()".}
 
 proc export_problem(root_dir: JsObject, prefix: string, p: Problem): Future[void] {.async.} =
   var dir = root_dir
-  for seg in prefix.split("::"):
+  for seg in prefix.replace("::", "/").split("/"):
     if seg.len == 0: continue
     dir = await dir.getDirectoryHandle(cstring(seg))
   let file = await dir.getFileHandle(cstring(p.name & ".sgf"))
@@ -329,9 +329,9 @@ proc init*(root: Element) =
   put_svg_defs(root)
 
   let header = root.h("div", "editor-header")
-  discard header.h("label", text = "prefix: ")
+  discard header.h("label", text = "パス階層: ")
   prefix_input = header.h("input", attrs = [("type", "text"), ("size", "30")])
-  discard header.h("label", text = " {i} カウンター: ")
+  discard header.h("label", text = " 問題番号: ")
   counter_value_input = header.h("input", attrs = [("type", "number"), ("size", "4")])
   discard header.h("label", text = " パディング: ")
   counter_padding_input = header.h("input", attrs = [("type", "number"), ("size", "2")])
