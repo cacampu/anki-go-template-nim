@@ -128,22 +128,26 @@ proc show_branches(
     grid: Element, node: GameNode,
     on_click: proc(idx: int),
     branches_cont: Element,
+    hover_target: proc(idx: int): Element,
 ) =
   ## 分岐ポインタを描画し、直接イベントリスナーを設定する。
+  ## 非主分岐(i>0)の "+" ボタンは hover_target が返す要素(盤面ポインタ or passボタン)とホバー連動する。
   for i, child in node.children:
     let move: Move = child.props
-    if move.kind != Put: continue
-    let key = if i == 0: "ansPtr" else: "branchPtr"
-    let el = grid.put_marker(key, move.coord)
-    if el == nil: continue
-    el.setAttribute("data-branch-idx", cstring($i))
-    el.addEventListener("mouseenter", proc(e: Event) =
-      cast[Element](e.currentTarget).classList.add(cstring("hover-state")))
-    el.addEventListener("mouseleave", proc(e: Event) =
-      cast[Element](e.currentTarget).classList.remove(cstring("hover-state")))
-    el.addEventListener("click", make_branch_click_handler(on_click, i))
+    if move.kind == Put:
+      let key = if i == 0: "ansPtr" else: "branchPtr"
+      let el = grid.put_marker(key, move.coord)
+      if el != nil:
+        el.setAttribute("data-branch-idx", cstring($i))
+        el.addEventListener("mouseenter", proc(e: Event) =
+          cast[Element](e.currentTarget).classList.add(cstring("hover-state")))
+        el.addEventListener("mouseleave", proc(e: Event) =
+          cast[Element](e.currentTarget).classList.remove(cstring("hover-state")))
+        el.addEventListener("click", make_branch_click_handler(on_click, i))
     if i > 0:
-      make_branch_button(branches_cont, el, on_click, i)
+      let target = hover_target(i)
+      if target != nil:
+        make_branch_button(branches_cont, target, on_click, i)
 
 ## ====== 描画 ======
 
@@ -246,6 +250,20 @@ proc init*(base: Element) =
   var re_render: proc()
   var pass_branch_idx = -1
 
+  proc update_pass_cls() =
+    ## passボタンのans/branch配色を更新する。分岐表示がOFFの間は盤面ポインタと同様に隠す。
+    var pass_cls = "pass-btn"
+    if is_pass_node(state.tree.current_node()): pass_cls.add(" last-move")
+    if view.show_ans_ptr:
+      if pass_branch_idx == 0: pass_cls.add(" ans")
+      elif pass_branch_idx > 0: pass_cls.add(" branch")
+    pass_btn.className = cstring(pass_cls)
+
+  proc hover_target(idx: int): Element =
+    ## 分岐idxに対応するホバー対象要素を返す。passの分岐ならpass_btn、それ以外は盤面ポインタ。
+    if idx == pass_branch_idx: pass_btn
+    else: pointer_grid.querySelector(cstring(".pointer-wrapper[data-branch-idx='" & $idx & "']"))
+
   # 分岐ポインタ表示トグル (ans-settings 内)
   let ptr_btn = ans_settings.h("div", "gb ans ptr-toggle", text = "分岐表示")
   ptr_btn.addEventListener("click", proc(e: Event) =
@@ -256,7 +274,8 @@ proc init*(base: Element) =
     if view.show_ans_ptr:
       pointer_grid.style.removeProperty("display")
     else:
-      pointer_grid.style.setProperty("display", "none"))
+      pointer_grid.style.setProperty("display", "none")
+    update_pass_cls())
 
   proc on_branch_click(idx: int) =
     if state.move_branch(Answer, Next, One, idx).isOk:
@@ -290,19 +309,13 @@ proc init*(base: Element) =
     branches_cont.clear()
     pass_branch_idx = -1
     if not state.tree.in_analysis():
-      show_branches(pointer_grid, state.tree.ans_current_node(), on_branch_click, branches_cont)
       for i, child in state.tree.ans_current_node().children:
         let move: Move = child.props
         if move.kind == Pass:
           pass_branch_idx = i
           break
-      if pass_branch_idx > 0:
-        make_branch_button(branches_cont, pass_btn, on_branch_click, pass_branch_idx)
-    var pass_cls = "pass-btn"
-    if is_pass_node(state.tree.current_node()): pass_cls.add(" last-move")
-    if pass_branch_idx == 0: pass_cls.add(" ans")
-    elif pass_branch_idx > 0: pass_cls.add(" branch")
-    pass_btn.className = cstring(pass_cls)
+      show_branches(pointer_grid, state.tree.ans_current_node(), on_branch_click, branches_cont, hover_target)
+    update_pass_cls()
     update_buttons()
     update_turn()
     update_comment()
@@ -354,12 +367,12 @@ proc init*(base: Element) =
   ans_btns[7].addEventListener("click", proc(e: Event) =
     if state.move_branch(Answer, Next, ToNextBranch).isOk: re_render())
 
-  # ans[3] (>) のホバーで ansPtr をハイライト
+  # ans[3] (>) のホバーで主分岐(idx=0)のホバー対象をハイライト
   ans_btns[3].addEventListener("mouseover", proc(e: Event) =
-    let el = pointer_grid.querySelector(cstring(".pointer-wrapper"))
+    let el = hover_target(0)
     if el != nil: el.classList.add(cstring("hover-state")))
   ans_btns[3].addEventListener("mouseout", proc(e: Event) =
-    let el = pointer_grid.querySelector(cstring(".pointer-wrapper"))
+    let el = hover_target(0)
     if el != nil: el.classList.remove(cstring("hover-state")))
 
   # pass ボタン: パスを打つ / パス分岐へ移動
