@@ -62,12 +62,18 @@ h2 {
 }
 
 .pass-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 18px;
+    box-sizing: border-box;
     border: 1px solid #000000;
     border-radius: 8px;
     background-color: #ffffff;
     color: #000000;
-    padding: 1px 6px;
     font-size: 12px;
+    line-height: 1;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.2s;
@@ -211,6 +217,7 @@ h2 {
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    user-select: none;
     transition: transform 0.2s;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
