@@ -247,9 +247,10 @@ proc render_comment_edit(parent: Element, idx: int) =
   let box = parent.h("div", "comment-edit")
   discard box.h("label", text = "コメント")
   let textarea = box.h("textarea", attrs = [("rows", "3")])
-  textarea.value = cstring(comment(p.current))
-  textarea.addEventListener("change", proc(e: Event) =
-    set_comment(state.problems[idx].current, $textarea.value))
+  let node = p.current
+  textarea.value = cstring(comment(node))
+  textarea.addEventListener("input", proc(e: Event) =
+    set_comment(node, $textarea.value))
 
 proc render_edit_pane() =
   edit_pane.clear()
