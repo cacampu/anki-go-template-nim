@@ -130,8 +130,13 @@ proc to_xy_range(coord: Coord): XYRange =
 
 proc update_range(acc: XYRange, node: Node): XYRange =
   result = acc
-  let keys = ["B", "W", "AB", "AW"]
-  for k in keys:
+  for k in ["B", "W"]:
+    if k in node.props:
+      for v in node.props[k]:
+        if v.is_pass: continue
+        let coord = parseCoord(v)
+        result = result.min_max(to_xy_range(coord))
+  for k in ["AB", "AW"]:
     if k in node.props:
       for v in node.props[k]:
         let coord = parseCoord(v)

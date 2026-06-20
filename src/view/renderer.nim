@@ -94,12 +94,17 @@ proc update_markers(grid: Element, node: GameNode, board: Board) =
 
 proc show_last_move(grid: Element, node: GameNode) =
   ## 直前の手にポインターを表示する。石の色と逆色でポインターを着色する。
-  for key in ["B", "W"]:
-    if key notin node.props: continue
-    let el = grid.put_marker("lastMovePtr", parseCoord(node.props[key][0]))
-    if el != nil:
-      el.classList.add(cstring(if key == "B": "onB" else: "onW"))
-    break
+  if "B" notin node.props and "W" notin node.props: return
+  let move: Move = node.props
+  if move.kind != Put: return
+  let el = grid.put_marker("lastMovePtr", move.coord)
+  if el != nil:
+    el.classList.add(cstring(if move.color == Black: "onB" else: "onW"))
+
+proc is_pass_node(node: GameNode): bool =
+  if "B" notin node.props and "W" notin node.props: return false
+  let move: Move = node.props
+  move.kind == Pass
 
 ## ====== 分岐ポインタの描画 ======
 
@@ -220,6 +225,7 @@ proc init*(base: Element) =
   let turn_stone = turn_row.h("div",
     if state.board.turn == Black: "turn-stone black"
     else: "turn-stone white")
+  let pass_btn   = turn_row.h("div", "pass-btn", text = "pass")
 
   # コメント (常に表示、編集不可)
   let comment_box = info_side.h("div", "comment-box")
@@ -238,6 +244,7 @@ proc init*(base: Element) =
 
   # re_render と on_branch_click は互いに参照するため var で前置宣言する
   var re_render: proc()
+  var pass_branch_idx = -1
 
   # 分岐ポインタ表示トグル (ans-settings 内)
   let ptr_btn = ans_settings.h("div", "gb ans ptr-toggle", text = "分岐表示")
@@ -281,8 +288,21 @@ proc init*(base: Element) =
     render(board, state)
     pointer_grid.clear()
     branches_cont.clear()
+    pass_branch_idx = -1
     if not state.tree.in_analysis():
       show_branches(pointer_grid, state.tree.ans_current_node(), on_branch_click, branches_cont)
+      for i, child in state.tree.ans_current_node().children:
+        let move: Move = child.props
+        if move.kind == Pass:
+          pass_branch_idx = i
+          break
+      if pass_branch_idx > 0:
+        make_branch_button(branches_cont, pass_btn, on_branch_click, pass_branch_idx)
+    var pass_cls = "pass-btn"
+    if is_pass_node(state.tree.current_node()): pass_cls.add(" last-move")
+    if pass_branch_idx == 0: pass_cls.add(" ans")
+    elif pass_branch_idx > 0: pass_cls.add(" branch")
+    pass_btn.className = cstring(pass_cls)
     update_buttons()
     update_turn()
     update_comment()
@@ -341,6 +361,20 @@ proc init*(base: Element) =
   ans_btns[3].addEventListener("mouseout", proc(e: Event) =
     let el = pointer_grid.querySelector(cstring(".pointer-wrapper"))
     if el != nil: el.classList.remove(cstring("hover-state")))
+
+  # pass ボタン: パスを打つ / パス分岐へ移動
+  pass_btn.addEventListener("click", proc(e: Event) =
+    if pass_branch_idx >= 0:
+      if state.move_branch(Answer, Next, One, pass_branch_idx).isOk:
+        re_render()
+    else:
+      let move = Move(color: state.board.turn, kind: Pass)
+      if state.apply_move(move).isOk:
+        re_render())
+  pass_btn.addEventListener("mouseenter", proc(e: Event) =
+    pass_btn.classList.add(cstring("hover-state")))
+  pass_btn.addEventListener("mouseleave", proc(e: Event) =
+    pass_btn.classList.remove(cstring("hover-state")))
 
   # showAns() フック登録
   g_on_show_ans = proc() =
