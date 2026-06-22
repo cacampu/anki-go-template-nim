@@ -295,6 +295,16 @@ proc getFileHandle(parent: JsObject, name: cstring): Future[JsObject] {.importjs
 proc createWritable(file: JsObject): Future[JsObject] {.importjs: "#.createWritable()".}
 proc writeText(w: JsObject, data: cstring): Future[JsObject] {.importjs: "#.write(#)".}
 proc closeWritable(w: JsObject): Future[JsObject] {.importjs: "#.close()".}
+proc listSgfFiles(dir: JsObject): Future[seq[JsObject]] {.importjs: """(async () => {
+  const out = [];
+  for await (const [name, handle] of #.entries()) {
+    if (handle.kind === 'file' && name.toLowerCase().endsWith('.sgf')) out.push(handle);
+  }
+  return out;
+})()""".}
+proc getFile(handle: JsObject): Future[JsObject] {.importjs: "#.getFile()".}
+proc readFileText(file: JsObject): Future[cstring] {.importjs: "#.text()".}
+proc handleName(handle: JsObject): cstring {.importjs: "#.name".}
 
 proc export_problem(root_dir: JsObject, prefix: string, p: Problem): Future[void] {.async.} =
   var dir = root_dir
@@ -315,12 +325,30 @@ proc export_all(): Future[void] {.async.} =
     await export_problem(root_dir, state.prefix, p)
   window.alert(cstring("書き出しが完了しました。"))
 
-proc handle_export_error(reason: Error) =
+proc import_problem_file(handle: JsObject): Future[void] {.async.} =
+  let file = await getFile(handle)
+  let text = await readFileText(file)
+  let full_name = $handleName(handle)
+  state.import_problem(full_name[0 ..< full_name.len - 4], $text) ## ".sgf" を除去
+
+proc import_all(): Future[void] {.async.} =
+  if not hasDirectoryPicker():
+    window.alert(cstring("このブラウザはインポート機能(File System Access API)に対応していません。Chrome等をご利用ください。"))
+    return
+  let dir = await showDirectoryPicker()
+  let files = await listSgfFiles(dir)
+  for handle in files:
+    await import_problem_file(handle)
+  state.sort_problems()
+  render_app()
+  window.alert(cstring(&"{files.len}件のSGFを読み込みました。"))
+
+proc handle_picker_error(reason: Error) =
   ## ピッカーのキャンセル(AbortError)は無視し、それ以外のエラーは表示する。
   ## (asyncjsのFuture内でNimのtry/exceptを使うとraiseDefectで再送出されてしまうため、
   ## 呼び出し側でFuture.catchを使う)
   if $reason.name != "AbortError":
-    window.alert(cstring("書き出しに失敗しました: " & $reason.message))
+    window.alert(cstring("処理に失敗しました: " & $reason.message))
 
 ## ====== 初期化 ======
 
@@ -336,6 +364,7 @@ proc init*(root: Element) =
   discard header.h("label", text = " パディング: ")
   counter_padding_input = header.h("input", attrs = [("type", "number"), ("size", "2")])
   let new_btn = header.h("button", text = "+ 新規作成")
+  let import_btn = header.h("button", text = "SGFを読み込み")
   let export_btn = header.h("button", text = "SGFを書き出し")
 
   let body = root.h("div", "editor-body")
@@ -374,8 +403,11 @@ proc init*(root: Element) =
     edit_tool = StoneTool
     render_app())
 
+  import_btn.addEventListener("click", proc(e: Event) =
+    discard import_all().catch(handle_picker_error))
+
   export_btn.addEventListener("click", proc(e: Event) =
-    discard export_all().catch(handle_export_error))
+    discard export_all().catch(handle_picker_error))
 
   name_input.addEventListener("change", proc(e: Event) =
     if state.problems.len == 0: return

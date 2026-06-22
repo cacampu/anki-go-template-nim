@@ -110,6 +110,12 @@ proc add_new_problem*(state: var EditorState, size: int = default_size) =
   state.problems.add(p)
   state.selected_id = p.id
 
+proc import_problem*(state: var EditorState, name: string, sgf_text: string) =
+  let root = parser.parse(sgf_text).root
+  let p = Problem(id: state.alloc_id(), name: name, root: root, current: root)
+  state.problems.add(p)
+  state.selected_id = p.id
+
 proc reset_problem*(p: var Problem) =
   ## root ノードを盤サイズのみ保持した新規作成直後の状態に戻す
   let root = Node(props: {"SZ": @[$p.size]}.toOrderedTable)
